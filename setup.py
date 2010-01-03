@@ -69,14 +69,14 @@ setup(name = 'yeps-clustering-lib',
       ext_modules=[Extension('dtw', dtw_sources,
                              include_dirs=dtw_include,
                              extra_compile_args=extra_compile_args),
-                   ],
+                   ]
       )
-"""
-setup(name = 'YEP',
+
+setup(name = 'yeps-clustering-lib',
       version = '0.1.0',
       requires = ['numpy (>= 1.1.0)'],
-      description = 'YEP Sonification',
-      author = 'WebValley Developers',
+      description = 'clustering libs for yeps tools',
+      author = 'Irish, Flash, fox, Pollo & WebValley Devs',
       author_email = '',
       url = '',
       download_url = '',
@@ -95,12 +95,9 @@ setup(name = 'YEP',
                    'Programming Language :: Python',
                    ],
       package_dir = {'': 'lib'},
-      packages=['iodata', 'kmedoid', 'pymplib', 'soni', 'maps', 'action_queue'],
+      packages=['iodata', 'kmedoid'],
       ext_modules=[Extension('dtw_cpu', dtw_cpu_sources,
                              include_dirs=dtw_include,
                              extra_compile_args=extra_compile_args),
-                   ],
-      scripts=['scripts/yeps', 'scripts/kmean'],
-      data_files = data_files
+                   ]
       )
-"""

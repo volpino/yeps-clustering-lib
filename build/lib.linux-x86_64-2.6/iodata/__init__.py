@@ -1,2 +1,0 @@
-from iodata import *
-
