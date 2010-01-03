@@ -44,7 +44,7 @@ extra_compile_args = ['-Wno-strict-prototypes']
 # Setup
 setup(name = 'yeps-clustering-lib',
       version = '0.1.0',
-      requires = ['numpy (>= 1.1.0)'],
+      requires = ['numpy (>= 1.1.0)', 'scipy'],
       description = 'clustering libs for yeps tools',
       author = 'Irish, Flash, fox, Pollo & WebValley Devs',
       author_email = '',
