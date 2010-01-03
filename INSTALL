@@ -4,7 +4,7 @@ Installation
 First build with
 $ python setup.py build
 then install with
-$ python setup.py install
+$ sudo python setup.py install
 
 
 
