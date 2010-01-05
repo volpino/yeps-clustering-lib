@@ -35,9 +35,12 @@ class Dist:
             try:
                 import dtw_gpu
             except ImportError:
-                print "No suitable hardware! Doing DTW on CPU..."
+                print "No suitable hardware! Doing DTW on CPU...
+            else:
+                self.gpu = dtw_gpu._DTW_(self.matrix)"
         else:
             import dtw_cpu
+            self.pu = "CPU"
             self.dtw_cpu = dtw_cpu
         self.pu = pu
         self.matrix = matrix
@@ -50,8 +53,6 @@ class Dist:
             self.derivative = True
         elif self.mode == "euclidean":
             self.euclidean = True
-        if self.pu == "GPU":
-            self.gpu = dtw_gpu._DTW_(self.matrix)
 
     def compute(self, li):
         '''
