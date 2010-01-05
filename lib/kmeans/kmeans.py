@@ -1,5 +1,3 @@
-__all__ = ["Means"]
-
 from numpy import array, sqrt, zeros, ones, inf,random
 from DTW_normal import DTW
 import scipy.stats
