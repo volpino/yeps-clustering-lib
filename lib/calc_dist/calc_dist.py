@@ -51,7 +51,7 @@ class Dist:
         elif self.mode == "euclidean":
             self.euclidean = True
         if self.pu == "GPU":
-            self.gpu = self.dtw_gpu._DTW_(self.matrix)
+            self.gpu = dtw_gpu._DTW_(self.matrix)
 
     def compute(self, li):
         '''
