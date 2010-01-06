@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+__all__=['kNN']
+
 import calc_dist as cd
 import numpy as np
 
@@ -18,14 +20,15 @@ class kNN:
 		self.radius=radius
 		self.calc_list=[]
 
-		self.tmp_matrix=training_set.append(ts)
-
-		cd.Dist.__init__(self.tmp_matrix, self.ditsance_type, self.fast, self.radius) 
+		self.tmp_matrix=[]
+		for i in range(len(self.training_set)):
+			self.tmp_matrix.append(self.training_set[i])
+		self.tmp_matrix.append(self.ts) 
 
 		for i in range(len(self.tmp_matrix)-1):
 			self.calc_list.append((len(self.tmp_matrix)-1,i))
 
-		self.dist_list=cd.Dist.compute(self.calc_list) #is this right?!
+		self.dist_list_tmp=cd.Dist(self.tmp_matrix, self.distance_type, self.fast, self.radius).compute(self.calc_list) 
 
 
 	def compute(self, k=1):
@@ -34,6 +37,10 @@ class kNN:
 		self.label_list=[]
 		self.label_dict={}
 		self.nn=[]
+		self.dist_list=[]
+		
+		for i in range(len(self.dist_list_tmp)):
+			self.dist_list.append(self.dist_list_tmp[i])
 
 		if k==1:
 			if self.dist_list.count(min(self.dist_list))==1:
@@ -42,7 +49,7 @@ class kNN:
 				for i in range(self.dist_list.count(min(self.dist_list))):
 					self.nn.append(self.labels[self.dist_list.index(min(self.dist_list))])
 					self.dist_list[self.dist_list.index(min(self.dist_list))]=np.inf
-				for j in range(len(self.nn-1)):
+				for i in range(len(self.nn-1)):
 					if self.nn[j]==self.nn[j+1]:
 						self.nn.__delitem__(j+1)
 					else:
@@ -52,14 +59,14 @@ class kNN:
 			for i in range(self.k):
 				self.label_list.append(self.dist_list.index(min(self.dist_list)))
 				self.dist_list[self.dist_list.index(min(self.dist_list))]=np.inf
-			for j in range(len(self.centroids)):
+			for i in range(len(self.centroids)):
 				self.label_dict[str(self.centroids[j])] = self.dist_list.count(self.centroid[j])
 			while self.nn==[] or self.nn>max(self.label_dict, key=lambda x:self.label_dict.get(x)):
 				self.nn.append(max(self.label_dict, key=lambda x:self.label_dict.get(x)))
 			
 
 
-		return nn
+		return self.nn
 
 
 if __name__ == '__main__':
@@ -73,6 +80,5 @@ if __name__ == '__main__':
 	fast = False
 	radius = 20
 
-	dist_list=__init__(ts, training_set, labels, centroids, distance_type, fast, radius)
-	nn = compute(k)
+	nn = kNN(ts, training_set, labels, centroids, distance_type, fast, radius).compute(k)
 	print nn
