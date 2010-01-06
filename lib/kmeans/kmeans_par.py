@@ -2,7 +2,6 @@
 
 
 from numpy import array, zeros, ones, inf,random,empty
-from DTW_normal import DTW
 import scipy.stats
 import dtw
 import time
@@ -37,7 +36,6 @@ class Means:
 		if (it<1) and (it!=None):
 			raise IterationError("it must be bigger than zeros" )
 		
-		self.pyorc=1
 		self.fast=fast
 		self.radius=radius
 		if distance=="ddtw":
@@ -183,11 +181,7 @@ Returns indices of centroids and a list which indicates the cluster each time se
 
 	def __difference_dtw(self, a, b):
 		''' It returns the distance between 2 series calculated with the dtw algorithm '''
-		if self.pyorc==0:
-			m=DTW(a, b)
-			temp=m.run(self.deriv,0)
-		if self.pyorc==1:
-			temp=dtw.compute_dtw(a,b,False,self.deriv,self.fast,self.radius)	
+		temp=dtw.compute_dtw(a,b,False,self.deriv,self.fast,self.radius)	
 		return temp
 
 	def __difference_pearson (self, a, b):

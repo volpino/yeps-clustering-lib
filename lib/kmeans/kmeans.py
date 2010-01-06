@@ -1,5 +1,4 @@
 from numpy import array,  zeros, ones, inf,random
-from DTW_normal import DTW
 import scipy.stats
 import dtw
 import time
