@@ -72,7 +72,7 @@ class Dist:
         '''
         if self.pu == "GPU":
             res = self.gpu.compute_dtw(li)
-        else:
+        elif self.pu == "CPU":
             res = numpy.array([])
             for qui in li:
                 tmp = self.dtw_cpu.compute_dtw(self.matrix[qui[0]],
