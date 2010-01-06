@@ -123,21 +123,17 @@ Returns indices of centroids and a list which indicates the cluster each time se
 		for i in range(self.r):	# cycle that scrolls every time series
 			for j in range(self.k):
 				li.append((i, self.points[j]))
-		print self.points
-		print "mando", li
+		#print li
 		lista=self.__mem(li)
-		print "torna", lista
+		#print lista
 		for i in range(self.r):	# cycle that scrolls every time series
 			minimum=inf
 			for j in range(self.k):
-				#print i,j
-				if (minimum>lista[i*self.k+j]):
+				if (minimum>=lista[i*self.k+j]):
 					self.min[i,0] = self.points[j]
-					#print self.points[j]
 					self.min[i,1] = lista[i*self.k+j]
 					minimum=lista[i*self.k+j]
-		print self.min
-		raw_input()
+		#print self.min
 	
 	def __centroids(self):
 		''' It gives tha array named self.points which contains the index of the lines of mat that contain the selected centroids'''
@@ -231,14 +227,12 @@ Returns indices of centroids and a list which indicates the cluster each time se
 					cond[i]=0
 		
 			
-	def __difference_pearson (self, li):
+	def __difference_pearson_par (self, li):
 		''' It returns the distance between 2 series computed with the Pearson correlation '''
 		temp=[]
 		for i in range (len(li)):
 			tmp=scipy.stats.pearsonr(self.mat[li[i][0],:],self.mat[li[i][1],:])
 			temp.append(tmp[1])
-			print self.mat[li[i][0],:],self.mat[li[i][1],:]
-			print tmp[1]
 		return temp
 
 
@@ -257,7 +251,7 @@ Returns indices of centroids and a list which indicates the cluster each time se
 		if self.met!="pearson":
 			ris=self.l.compute(li)
 		else:
-			ris=self.__difference_pearson(li)
+			ris=self.__difference_pearson_par(li)
 
 
 		for i in range(len(ris)):

@@ -55,7 +55,7 @@ void fill_matrix(double **matrix, double* s1, int len_s1, double* s2, int len_s2
 	{
 		for(j = 0; j < len_s2; j+=1) //iteration throug the y axis
 		{
-			matrix[i][j] = sqrt(pow((i - j),2) + pow((s1[i] - s2[j]),2)); //distance calculation
+			matrix[i][j] = (pow((i - j),2) + pow((s1[i] - s2[j]),2)); //distance calculation
 		}
 	}
 }
@@ -175,7 +175,7 @@ void fast_fill_matrix(double **matrix, point_t *window, int radius, double* s1, 
 			for(y = (window[i].y*2)-radius-2; y <= (window[i].y*2)+radius+1; y +=1)
 			{		
 				if ((x < len_s1 && x > -1) && (y < len_s2 && y > -1))
-					matrix[x][y] = sqrt(pow((x - y),2) + pow((s1[x] - s2[y]),2));		
+					matrix[x][y] = (pow((x - y),2) + pow((s1[x] - s2[y]),2));		
 			}
 		}
 	}
