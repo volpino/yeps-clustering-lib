@@ -11,6 +11,6 @@ $ sudo python setup.py install
 Deps
 -----------------------------------------
 
-* Python 2.6 or above
+* Python 2.6 or above (with development files)
 * Numpy > 1.1.0
 * scipy
