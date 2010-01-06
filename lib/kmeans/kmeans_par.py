@@ -248,7 +248,7 @@ Returns indices of centroids and a list which indicates the cluster each time se
 		
 		while -1 in li:
 			li.remove(-1);
-		if self.met!="pearson":
+		if self.distance!="pearson":
 			ris=self.l.compute(li)
 		else:
 			ris=self.__difference_pearson_par(li)
