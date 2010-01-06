@@ -1,8 +1,12 @@
-from numpy import array,  zeros, ones, inf,random
+#!/usr/bin/python
+
+
+from numpy import array, sqrt, zeros, ones, inf,random,empty
 from DTW_normal import DTW
 import scipy.stats
 import dtw
 import time
+import calc_dist
 
 class DistanceError (Exception):
 	'''Distance calculation method not supported'''
@@ -22,7 +26,7 @@ class InitError (Exception):
 
 class Means:
 	''' class that manages the algorithm of k-means'''
-	def __init__(self, it=None, distance="ddtw", fast=False, radius=20, seed=None, tol=0.0001):
+	def __init__(self, it=None, distance="ddtw", fast=False, radius=20, seed=None, tol=0.0001, pu="CPU"):
 		''' This function gets the inputs which are: nrip:number of times the cycle of clustering must be run (if not defined
 		 the algorithm runs until the variants between the old and the new centroids is lower than const tol); the flag met defines
 		 the method by which the distance between series is calculated (dtw/ddtw/euclidean/pearson); fast: if True use fast dtw;
@@ -51,7 +55,8 @@ class Means:
 		self.nrip=it
 		self.error=tol
 		self.seed=seed		
-		
+		self.pu=pu
+		self.distance=distance
 
 	def compute (self, k, mat):
 		''' This function takes: number of trends, k; a matrix, mat, (where each row is a timeseries and each column a point of the time series).
@@ -66,7 +71,10 @@ Returns indices of centroids and a list which indicates the cluster each time se
 		self.mat=self.mat.T
 		self.r = self.mat.shape[0]
 		self.points = zeros(k)
-		self.points-=1		
+		self.points-=1
+		self.l=calc_dist.Dist(self.mat,self.distance, self.fast, self.radius, self.pu)
+		self.memo= zeros((self.r,self.r))
+		self.memo-=1
 		self.min = zeros((self.r, 2))
 		if (self.k>self.r/2):
 			raise ClusterError("WTF, the number of cluster can't be bigger than half of the total number of tseries" )
@@ -112,19 +120,27 @@ Returns indices of centroids and a list which indicates the cluster each time se
 
 	def __compare(self):
 		''' It assignes each series to the nearest centroid '''
+		li=[]
+		lista=[]
 		for i in range(self.r):	# cycle that scrolls every time series
-			listdiff = zeros(self.k)
 			for j in range(self.k):
-				print "mando",i,self.points[j]
-				listdiff[j] = self.__difference(self.mat[i].copy(), self.mat[self.points[j]].copy())
-				print "torna", listdiff[j]	# records in listdiff the distance between the time series i and the centroid self.points[j]
-			for x, val in enumerate(listdiff):
-				if val == listdiff.min():
-					self.min[i,0] = self.points[x]	# sefl.min is a matrix that contains a line for each time series, in the first it's recorded the centroid from which it is closer and in the second the distance from that centroid
-			self.min[i,1] = listdiff.min()
+				li.append((i, self.points[j]))
+		print self.points
+		print "mando", li
+		lista=self.__mem(li)
+		print "torna", lista
+		for i in range(self.r):	# cycle that scrolls every time series
+			minimum=inf
+			for j in range(self.k):
+				#print i,j
+				if (minimum>lista[i*self.k+j]):
+					self.min[i,0] = self.points[j]
+					#print self.points[j]
+					self.min[i,1] = lista[i*self.k+j]
+					minimum=lista[i*self.k+j]
 		print self.min
-			
-
+		raw_input()
+	
 	def __centroids(self):
 		''' It gives tha array named self.points which contains the index of the lines of mat that contain the selected centroids'''
 		for i in range(self.k):
@@ -220,14 +236,57 @@ Returns indices of centroids and a list which indicates the cluster each time se
 					self.__compare()
 					cond[i]=0
 		
-				
+			
+	def __difference_pearson (self, li):
+		''' It returns the distance between 2 series computed with the Pearson correlation '''
+		temp=[]
+		for i in range (len(li)):
+			tmp=scipy.stats.pearsonr(self.mat[li[i][0],:],self.mat[li[i][1],:])
+			temp.append(tmp[1])
+			print self.mat[li[i][0],:],self.mat[li[i][1],:]
+			print tmp[1]
+		return temp
+
+
+	def __mem (self, li):
+		temp=empty(len(li))
+		index=[]
+		for i in range(len(li)):
+			if self.memo[li[i][0],li[i][1]]!=-1:
+				temp[i]=self.memo[li[i][0],li[i][1]]
+				li[i] = -1;				
+			else:
+				index.append(i)
+		
+		while -1 in li:
+			li.remove(-1);
+		if self.met!="pearson":
+			ris=self.l.compute(li)
+		else:
+			ris=self.__difference_pearson(li)
+
+
+		for i in range(len(ris)):
+			self.memo[li[i][0],li[i][1]]=ris[i]
+			temp[index[i]]=ris[i]
+
+		return temp
+
+
+
+
+
+
+
+
+
 
 			
 
 if __name__ == "__main__":				
 	k = 2	# number of clusters the time series have to be divided in
-	mat = array(   [[4,2,6,1],[4,3,6,6],[1,2,4,4],	# each line is a time series
-       		         [7,5,7,4],[8,6,5,2],[7,8,9,1],
-        	        [1,2,4,4],[7,5,9,7],[3,1,4,5]] )
+	mat = array(   [[4,2.1,6,1],[4.2,3,6,6],[1,2.1,4,4],	# each line is a time series
+       		         [7,5,7,4],[8,6,5.7,2],[7,8.1,9,1],
+        	        [1,2,4,4],[7,5,9,7.4],[3,1.2,4,5]] )
 	m = Means(k, mat)   
 
