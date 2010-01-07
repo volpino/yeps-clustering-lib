@@ -24,8 +24,9 @@ class InitError (Exception):
 	pass
 
 class Means:
-	''' class that manages the algorithm of k-means'''
-	def __init__(self, it=None, distance="ddtw", fast=False, radius=20, seed=None, tol=0.0001, pu="CPU"):
+    ''' class that manages the algorithm of k-means'''
+
+    def __init__(self, it=None, distance="ddtw", fast=False, radius=20, seed=None, tol=0.0001, pu="CPU"):
 		''' This function gets the inputs which are: nrip:number of times the cycle of clustering must be run (if not defined
 		 the algorithm runs until the variants between the old and the new centroids is lower than const tol); the flag met defines
 		 the method by which the distance between series is calculated (dtw/ddtw/euclidean/pearson); fast: if True use fast dtw;
@@ -35,7 +36,7 @@ class Means:
 
 		if (it<1) and (it!=None):
 			raise IterationError("it must be bigger than zeros" )
-		
+
 		self.fast=fast
 		self.radius=radius
 		if distance=="ddtw":
@@ -114,7 +115,7 @@ Returns indices of centroids and a list which indicates the cluster each time se
 					div+=1
 			varianza[i]=varianza[i]/div
 		return	varianza.sum(axis=0)
-	
+
 
 	def __compare(self):
 		''' It assignes each series to the nearest centroid '''
@@ -170,7 +171,7 @@ Returns indices of centroids and a list which indicates the cluster each time se
 
 	def __difference_eucl(self, a, b):
 		''' It returns the euclidean distance between 2 series '''
-		val = 0 
+		val = 0
 		for i in range(self.mat.shape[1]):
 			val += (a[i] - b[i])**2
 		return val
@@ -195,7 +196,7 @@ Returns indices of centroids and a list which indicates the cluster each time se
 					index+=1
 					for k in range(self.mat.shape[1]):
 						media[k] += self.mat[j,k]
-						
+
 			media /= index
 			mini = inf
 			for j in range(self.r):		# finds the time series wich has the closest distance to the average of the distances from the centroid to each time series in that cluster
@@ -205,7 +206,7 @@ Returns indices of centroids and a list which indicates the cluster each time se
 						mini = dif
 						centroi = j
 			self.points[i]=centroi
-		
+
 
 	def __control(self):
 		''' It checks if there are empty clusters or clusters with only one time series'''
@@ -225,8 +226,8 @@ Returns indices of centroids and a list which indicates the cluster each time se
 					self.__centroids() # if empty clusters are found this function reassign centroids and checks again
 					self.__compare()
 					cond[i]=0
-		
-			
+
+
 	def __difference_pearson_par (self, li):
 		''' It returns the distance between 2 series computed with the Pearson correlation '''
 		temp=[]
@@ -242,10 +243,10 @@ Returns indices of centroids and a list which indicates the cluster each time se
 		for i in range(len(li)):
 			if self.memo[li[i][0],li[i][1]]!=-1:
 				temp[i]=self.memo[li[i][0],li[i][1]]
-				li[i] = -1;				
+				li[i] = -1;
 			else:
 				index.append(i)
-		
+
 		while -1 in li:
 			li.remove(-1);
 		if self.distance!="pearson":
@@ -261,20 +262,10 @@ Returns indices of centroids and a list which indicates the cluster each time se
 		return temp
 
 
-
-
-
-
-
-
-
-
-			
-
-if __name__ == "__main__":				
+if __name__ == "__main__":
 	k = 2	# number of clusters the time series have to be divided in
 	mat = array(   [[4,2.1,6,1],[4.2,3,6,6],[1,2.1,4,4],	# each line is a time series
        		         [7,5,7,4],[8,6,5.7,2],[7,8.1,9,1],
         	        [1,2,4,4],[7,5,9,7.4],[3,1.2,4,5]] )
-	m = Means(k, mat)   
+	m = Means(k, mat)
 

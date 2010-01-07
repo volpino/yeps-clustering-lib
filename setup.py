@@ -32,7 +32,6 @@ dtw_include = base_include
 ##### Sources #######################################################################
 
 ## dtw sources
-dtw_sources = ['lib/dtw_cpu/dtw_py.c']
 dtw_cpu_sources = ['lib/dtw_cpu/dtw_cpu_py.c']
 
 #####################################################################################
@@ -65,11 +64,8 @@ setup(name = 'yeps-clustering-lib',
                    'Programming Language :: Python',
                    ],
       package_dir = {'': 'lib'},
-      packages=['iodata', 'kmedoid', 'kmeans', 'calc_dist', 'dtw_gpu'],
-      ext_modules=[Extension('dtw', dtw_sources,
-                             include_dirs=dtw_include,
-                             extra_compile_args=extra_compile_args),
-                   Extension('dtw_cpu', dtw_cpu_sources,
+      packages=['iodata', 'kmedoid', 'kmeans', 'knn', 'calc_dist', 'dtw_gpu'],
+      ext_modules=[Extension('dtw_cpu', dtw_cpu_sources,
                              include_dirs=dtw_include,
                              extra_compile_args=extra_compile_args)
                   ]

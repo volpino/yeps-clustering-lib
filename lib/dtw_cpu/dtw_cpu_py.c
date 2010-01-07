@@ -20,7 +20,6 @@
  *If deriv is 1 the calculation is made on the derivatives of the two series.
  */
 
-
 typedef struct point_t // struct used for the storage of the path
 {
 	int x,y;
