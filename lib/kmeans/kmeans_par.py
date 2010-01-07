@@ -167,7 +167,7 @@ class Means:
                             #print "condizione"
                             #cond=0
 
-    def __difference (self, a, b):
+    def __difference(self, a, b):
         ''' This fuction allows the user to choose between dtw/ddtw, euclidean distance or Pearson correlation when clustering '''
         t=0.0
         if self.met==0:
