@@ -27,10 +27,16 @@ class Means:
     ''' class that manages the algorithm of k-means'''
 
     def __init__(self, it=None, distance="ddtw", fast=False, radius=20, seed=None, tol=0.0001, pu="CPU"):
-        ''' This function gets the inputs which are: nrip:number of times the cycle of clustering must be run (if not defined
-         the algorithm runs until the variants between the old and the new centroids is lower than const tol); the flag met defines
-         the method by which the distance between series is calculated (dtw/ddtw/euclidean/pearson); fast: if True use fast dtw;
-         radius: define the accurancy of fastdtw; seed: parameter for random function; tol: define the precision of the kmedoid alghoritm'''
+        '''
+        This function gets the inputs which are: nrip:number of times the
+        cycle of clustering must be run (if not defined the algorithm runs
+        until the variants between the old and the new centroids is lower
+        than const tol); the flag met defines the method by which the
+        distance between series is calculated (dtw/ddtw/euclidean/pearson);
+        fast: if True use fast dtw;
+        radius: define the accurancy of fastdtw; seed: parameter for
+        random function; tol: define the precision of the kmedoid alghoritm
+        '''
         if not distance in ["dtw", "ddtw", "euclidean", "pearson"]:
             raise DistanceError("distance %s is not implemented" % distance)
 
@@ -53,14 +59,15 @@ class Means:
             self.met=0
         self.nrip=it
         self.error=tol
-        self.seed=seed      
+        self.seed=seed
         self.pu=pu
         self.distance=distance
 
     def compute (self, k, mat):
         '''
         This function takes: number of trends, k; a matrix, mat,
-        (where each row is a timeseries and each column a point of the time series).
+        (where each row is a timeseries and each column a point of the time
+        series).
         Returns indices of centroids and a list which indicates the cluster
         each time series fit in.
         '''
@@ -85,7 +92,7 @@ class Means:
         self.__centroids() # calls the function that assigns random centroids   # value of the error that determines the stopping of the algorithm of clustering
         self.__compare()    # calls the function that puts each time series with the most similar centroid
         self.__control()    # calls the function that checks that no empty clusters came out from the random choice
-        cont=0      
+        cont=0
         old_error = self.__calc_err()
         new_error = old_error*(2.0+self.error)
         if not self.nrip:
@@ -139,11 +146,11 @@ class Means:
                     self.min[i,1] = lista[i*self.k+j]
                     minimum=lista[i*self.k+j]
         #print self.min
-    
+
     def __centroids(self):
         ''' It gives tha array named self.points which contains the index of the lines of mat that contain the selected centroids'''
         for i in range(self.k):
-            cond = 0            
+            cond = 0
             while cond == 0:                # cycle that picks k different numbers randomly
                 t = random.randint(self.r)
                 if t in self.points:
@@ -159,8 +166,7 @@ class Means:
                             #print self.__difference(self.mat[self.points[j]].copy(),self.mat[self.points[i]].copy())
                             #print "condizione"
                             #cond=0
-        
-    
+
     def __difference (self, a, b):
         ''' This fuction allows the user to choose between dtw/ddtw, euclidean distance or Pearson correlation when clustering '''
         t=0.0
@@ -170,7 +176,7 @@ class Means:
             t=self.__difference_eucl (a,b)
         elif self.met==2:
             t=self.__difference_pearson (a,b)
-        
+
         return t
 
     def __difference_eucl(self, a, b):
@@ -182,7 +188,7 @@ class Means:
 
     def __difference_dtw(self, a, b):
         ''' It returns the distance between 2 series calculated with the dtw algorithm '''
-        temp=dtw.compute_dtw(a,b,False,self.deriv,self.fast,self.radius)    
+        temp=dtw.compute_dtw(a,b,False,self.deriv,self.fast,self.radius)
         return temp
 
     def __difference_pearson (self, a, b):
