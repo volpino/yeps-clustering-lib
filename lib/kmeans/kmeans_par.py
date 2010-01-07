@@ -58,9 +58,13 @@ class Means:
 		self.distance=distance
 
 	def compute (self, k, mat):
-		''' This function takes: number of trends, k; a matrix, mat, (where each row is a timeseries and each column a point of the time series).
-Returns indices of centroids and a list which indicates the cluster each time series fit in.'''
-		if self.seed==None:
+		'''
+        This function takes: number of trends, k; a matrix, mat,
+        (where each row is a timeseries and each column a point of the time series).
+        Returns indices of centroids and a list which indicates the cluster
+        each time series fit in.
+        '''
+        if self.seed==None:
 			random.seed(int(time.time()))
 		else:
 			random.seed(self.seed)
