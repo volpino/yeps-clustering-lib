@@ -6,7 +6,7 @@ import numpy as np
 class kNN:
 
     def __init__(self, ts, training_set, labels, centroids,
-                 distance_type="dtw", fast=False, radius=20):
+                 distance_type="dtw", fast=False, radius=20, pu="CPU"):
         self.ts = ts
         self.training_set = training_set
         self.labels = labels
