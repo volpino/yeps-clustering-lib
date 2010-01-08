@@ -26,7 +26,9 @@ class kNN:
 
         self.dist_list_tmp = cd.Dist(self.tmp_matrix,
                                      self.distance_type,
-                                     self.fast, self.radius).compute(self.calc_list)
+                                     self.fast,
+                                     self.radius,
+                                     pu=pu).compute(self.calc_list)
 
     def compute(self, k=1):
         self.k=k
