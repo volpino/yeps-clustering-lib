@@ -55,7 +55,7 @@ class Means:
         self.fast=fast
         self.radius=radius    
         self.seed=seed
-	self.error=tol
+        self.error=tol
         self.pu=pu
         
        
