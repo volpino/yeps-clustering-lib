@@ -55,12 +55,12 @@ class kNN:
 
         else:
             for i in range(self.k):
-                self.label_list.append(self.dist_list.index(min(self.dist_list)))
+                self.label_list.append(int(self.dist_list.index(min(self.dist_list))))
                 self.dist_list[self.dist_list.index(min(self.dist_list))]=np.inf
             for i in range(len(self.centroids)):
-                self.label_dict[str(self.centroids[j])] = self.dist_list.count(self.centroid[j])
+                self.label_dict[str(self.centroids[i])] = self.dist_list.count(self.centroids[i])
             while self.nn==[] or self.nn>max(self.label_dict, key=lambda x:self.label_dict.get(x)):
-                self.nn.append(max(self.label_dict, key=lambda x:self.label_dict.get(x)))
+                self.nn.append(int(max(self.label_dict, key=lambda x:self.label_dict.get(x))))
 
         return self.nn
 
@@ -73,7 +73,7 @@ if __name__ == '__main__':
     distance_type = 'dtw'
     fast = False
     radius = 20
-    k = 1
+    k = 2
     nn = kNN(ts,
              training_set,
              labels,
