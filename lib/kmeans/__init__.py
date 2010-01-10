@@ -1,1 +1,1 @@
-from kmeans_par import *
+from kmeans import *
