@@ -187,10 +187,19 @@ class Means:
         ''' It assignes each series to the nearest centroid '''
         li=[]
         lista=[]
+        cont=0
         for i in range(self.r): # cycle that scrolls every time series
             for j in range(self.k):
                 li.append((i, self.centroids[j]))
-        lista=self.__mem(li)
+                cont+=1
+                if cont>150000:
+                    cont=0
+                    temp=self.__mem(li)
+                    lista.extend(temp)
+                    li=[]
+
+        lista.extend(self.__mem(li))
+
         for i in range(self.r): # cycle that scrolls every time series
             minimum=inf
             for j in range(self.k):
