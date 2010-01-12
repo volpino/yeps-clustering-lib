@@ -158,7 +158,7 @@ class Means:
             t=self.__difference_pearson (a,b)
         return t
 
-	
+
     def __difference_dtw(self, a, b):
         ''' It returns the distance between 2 series calculated with the dtw algorithm '''
         if self.distance=="ddtw":
