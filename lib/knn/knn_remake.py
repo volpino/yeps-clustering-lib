@@ -16,12 +16,17 @@ class kS:
         self.calc_list = []
         self.pu = pu
         
+        if len(training_set) != len(labels):
+            raise ValueError
+        
         self.groups = []
+        self.groups.extend(self.labels)
         self.groups.sort()
-  	 	last = self.groups[-1]
-  		    for i in range(len(self.groups)-2, -1, -1):
-                 if last==self.groups[i]: del self.groups[i]
-                 else: self.groups=List[i]
+        last = self.groups[-1]
+        for i in range(len(self.groups)-2, -1, -1):
+            if last==self.groups[i]: 
+                del self.groups[i]
+            else: last=self.groups[i]
 
 
         self.tmp_matrix = []
