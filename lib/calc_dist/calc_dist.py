@@ -37,6 +37,8 @@ class Dist:
             except ImportError:
                 print "No suitable hardware! Doing DTW on CPU..."
                 pu = "CPU"
+                import dtw_cpu
+                self.dtw_cpu = dtw_cpu
             else:
                 self.gpu = dtw_gpu._DTW_(self.matrix)
         else:
