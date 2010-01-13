@@ -5,17 +5,24 @@ import numpy as np
 
 class kS:
 
-    def __init__(self, ts, training_set, labels, centroids,
+    def __init__(self, ts, training_set, labels,
                  distance_type="dtw", fast=False, radius=20, pu="CPU"):
         self.ts = ts
         self.training_set = training_set
         self.labels = labels
-        self.centroids = centroids
         self.distance_type = distance_type
         self.fast = fast
         self.radius = radius
         self.calc_list = []
         self.pu = pu
+        
+        self.groups = []
+        self.groups.sort()
+  	 	last = self.groups[-1]
+  		    for i in range(len(self.groups)-2, -1, -1):
+                 if last==self.groups[i]: del self.groups[i]
+                 else: self.groups=List[i]
+
 
         self.tmp_matrix = []
         for i in range(len(self.training_set)):
@@ -48,7 +55,7 @@ class kS:
             self.centroid_list.append(self.dist_list[i][1])
 
         self.total = []   
-        for i in self.centroids:
+        for i in self.groups:
             a = [self.centroid_list.count(i), i]
             self.total.append(a)	
             		
@@ -68,7 +75,6 @@ class kS:
 if __name__ == '__main__':
     ts = [1,2,3,4,5]
     training_set = [[1,2,3,4,5],[5,4,3,2,1],[5,4,4,2,1],[2,2,3,4,5]]
-    centroids = [1,2,3]
     labels = [3,2,2,1]
     distance_type = 'dtw'
     fast = False
@@ -77,7 +83,6 @@ if __name__ == '__main__':
     nn = kS(ts,
              training_set,
              labels,
-             centroids,
              distance_type,
              fast,
              radius)
