@@ -15,6 +15,7 @@ class kS:
         self.fast = fast
         self.radius = radius
         self.calc_list = []
+        self.pu = pu
 
         self.tmp_matrix = []
         for i in range(len(self.training_set)):
@@ -33,7 +34,7 @@ class kS:
                              self.distance_type,
                              self.fast,
                              self.radius,
-                             pu=pu).compute(self.calc_list)
+                             self.pu).compute(self.calc_list)
         self.nn=[]  
         self.dist_list = []
         for i in range(len(self.dist_list_tmp)):
