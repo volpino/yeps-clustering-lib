@@ -40,7 +40,7 @@ class Dist:
                 import dtw_cpu
                 self.dtw_cpu = dtw_cpu
             else:
-                self.gpu = dtw_gpu._DTW_(self.matrix)
+                self.gpu = dtw_gpu._DTW_(matrix)
         else:
             pu = "CPU"
             import dtw_cpu
