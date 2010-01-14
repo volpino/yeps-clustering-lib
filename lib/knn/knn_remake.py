@@ -27,58 +27,66 @@ class kS:
             if last==self.groups[i]: 
                 del self.groups[i]
             else: last=self.groups[i]
-
-
-        self.tmp_matrix = []
-        for i in range(len(self.training_set)):
-            self.tmp_matrix.append(self.training_set[i])
-        self.tmp_matrix.append(self.ts)
-
-        for i in range(len(self.tmp_matrix) - 1):
-            self.calc_list.append((len(self.tmp_matrix) - 1, i))
+            
         
-    def compute(self, k=1):
-    
+    def compute_single(self, test, k):
     	if k > len(self.training_set):
     		raise ValueError
-    	
-        self.dist_list_tmp = cd.Dist(self.tmp_matrix,
+
+        tmp_matrix = []
+        for i in range(len(self.training_set)):
+            tmp_matrix.append(self.training_set[i])
+        tmp_matrix.append(test)
+        
+        calc_list = []
+        for i in range(len(tmp_matrix) - 1):
+            calc_list.append([len(tmp_matrix) - 1, i])
+
+        dist_list_tmp = cd.Dist(tmp_matrix,
                              self.distance_type,
                              self.fast,
                              self.radius,
-                             self.pu).compute(self.calc_list)
-        self.nn=[]  
-        self.dist_list = []
-        for i in range(len(self.dist_list_tmp)):
-            a = [self.dist_list_tmp[i], self.labels[i]]
-            self.dist_list.append(a)      
+                             self.pu).compute(calc_list)
+        nn=[]  
+        dist_list = []
+        for i in range(len(dist_list_tmp)):
+            a = [dist_list_tmp[i], self.labels[i]]
+            dist_list.append(a)      
  
-        self.dist_list.sort()
-        self.centroid_list = []
+        dist_list.sort()
+        centroid_list = []
         
         for i in range(k):
-            self.centroid_list.append(self.dist_list[i][1])
+            centroid_list.append(dist_list[i][1])
 
-        self.total = []   
+        total = []   
         for i in self.groups:
-            a = [self.centroid_list.count(i), i]
-            self.total.append(a)	
+            a = [centroid_list.count(i), i]
+            total.append(a)	
             		
-        self.total.sort()
-        self.total.reverse()
-        self.maxvotes = self.total[0][0]
+        total.sort()
+        total.reverse()
+        maxvotes = total[0][0]
         i = 0
         try:
-            while (self.total[i][0] == self.maxvotes):
-                self.nn.append(self.total[i][1])
+            while (total[i][0] == maxvotes):
+                nn.append(total[i][1])
                 i = i+1
         except IndexError:
         	pass
         
-        return self.nn
+        return nn
+        
+        
+    def compute(self, k=1):    
+        ret = []
+        for i in ts:
+            ret.append(self.compute_single(i, k))
+
+        return ret
 
 if __name__ == '__main__':
-    ts = [1,2,3,4,5]
+    ts = [[1,2,3,4,5],[5,4,3,2,1],[4,5,6,2,5]]
     training_set = [[1,2,3,4,5],[5,4,3,2,1],[5,4,4,2,1],[2,2,3,4,5]]
     labels = [3,2,2,1]
     distance_type = 'dtw'
