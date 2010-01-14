@@ -33,7 +33,7 @@ class Dist:
         '''
         if pu == "GPU":
             try:
-                import dtw_gpu
+                from dtw_gpu import dtw_gpu
             except ImportError:
                 print "No suitable hardware! Doing DTW on CPU..."
                 pu = "CPU"
