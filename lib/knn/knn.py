@@ -36,7 +36,7 @@ class kNN:
                                      self.radius,
                                      pu=pu).compute(self.calc_list)
 
-    def compute(self, k=1, weighted):
+    def compute(self, k=1):
         self.k = k
         self.nn = []
         self.dist_list = []
@@ -69,7 +69,7 @@ if __name__ == '__main__':
     distance_type = 'dtw'
     fast = False
     radius = 20
-    k = 3
+    k = 1
     nn = kNN(test_set,
              training_set,
              labels,
