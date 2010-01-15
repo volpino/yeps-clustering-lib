@@ -62,8 +62,8 @@ class kS:
         total = []   
         for i in self.groups:
             a = [centroid_list.count(i), i]
-            total.append(a)	
-            		
+            total.append(a)
+
         total.sort()
         total.reverse()
         maxvotes = total[0][0]
@@ -74,13 +74,11 @@ class kS:
                 i = i+1
         except IndexError:
         	pass
-        
         return nn
-        
-        
-    def compute(self, k=1):    
+
+    def compute(self, k=1):
         ret = []
-        for i in ts:
+        for i in self.ts:
             ret.append(self.compute_single(i, k))
 
         return ret
