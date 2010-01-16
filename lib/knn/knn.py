@@ -17,9 +17,15 @@ class kNN:
         self.radius = radius
         self.pu=pu
 
+        if len(self.training_set) != len(self.label_list):
+            raise ValueError
+
     def compute(self, k=1):
         self.k = k
         self.test_set_labels = []
+
+    	if self.k > len(self.training_set) or self.k < 1:
+    		raise ValueError
 
         for i in range(len(self.test_set)):
             self.tmp_set = []
