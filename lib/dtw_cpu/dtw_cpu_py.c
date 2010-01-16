@@ -96,9 +96,9 @@ double short_path(double **matrix, int len_x, int len_y, point_t* path) //calcul
 
 	if (path == NULL)
 	{
-			return res; //if we haven't to calculate the path return
 			for (i=0; i < len_x; i++) free(d_values[i]);
 			free(d_values);
+			return res; //if we haven't to calculate the path return
 	}
 
 
