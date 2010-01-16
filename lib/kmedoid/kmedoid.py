@@ -34,6 +34,17 @@ class Medoid:
             raise ValueError("distance %s is not implemented" % distance)
         if (it<1) and (it!=None):
             raise ValueError("it must be bigger than zeros" )
+        if pu == "GPU":
+            try:
+                from dtw_gpu import dtw_gpu
+            except ImportError:
+                print "No suitable hardware! Doing DTW on CPU..."
+                pu = "CPU"
+        if (pu=="GPU"):
+            if (distance!="ddtw") and (distance!="dtw"):
+                print "Il calcolo su Gpu e' sisponibile solo con dtw/ddtw"
+                distance="dtw"
+
 
         self.nrip=it
         self.met=distance
@@ -52,6 +63,7 @@ class Medoid:
         self.memo= zeros((mat.shape[1],mat.shape[1]))
         self.memo-=1
         self.min = zeros((mat.shape[1], 2))
+        self.reinit_maxiter=0
         if self.seed==None:
             random.seed(int(time.time()))
         else:
@@ -64,8 +76,11 @@ class Medoid:
         self.l = calc_dist.Dist(self.mat,self.met, self.fast, self.radius, pu=self.pu)
         
         self.__selectmedoid()
+        self.__associate()
+        self.__control()
+        self.__swap()
+        cont_iteration=0
         if self.nrip==None:
-            conf_prec=zeros(self.k)
             cond=0
             while  cond==0:
                 conf_prec=self.medoids.copy()
@@ -75,6 +90,9 @@ class Medoid:
                 for i in range (self.k):
                     if conf_prec[i]!=self.medoids[i]:
                         cond=0
+                cont_iteration+=1
+                if cont_iteration>1000:
+                    cond=1
         else:
             for i in range(self.nrip):
                 self.__associate()
@@ -99,6 +117,19 @@ class Medoid:
                 else:
                     self.medoids[i] = t
                     cond = 1
+
+    def __control(self):
+        cond=zeros(self.r)
+        for i in range(self.r):
+           cond[self.min[i,0]]+=1
+        if (1 in cond):
+            print "EMPTY CLUSTER:RE-INIT"
+            self.reinit_maxiter+=1
+            if self.reinit_maxiter>100:
+                raise InitError("general error: I can't initialize the clusters, try changing distance measure or provide other dataset" )
+            self.__selectmedoid()
+            self.__associate()
+            self.__control()
 
     def __associate(self):
         ''' It assignes each series to the nearest medoid '''

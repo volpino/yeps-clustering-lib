@@ -41,10 +41,14 @@ class Means:
         '''
         if not distance in ["dtw", "ddtw", "euclidean", "pearson"]:
             raise DistanceError("distance %s is not implemented" % distance)
-
         if (it<1) and (it!=None):
             raise IterationError("it must be bigger than zeros" )
-
+        if pu == "GPU":
+            try:
+                from dtw_gpu import dtw_gpu
+            except ImportError:
+                print "No suitable hardware! Doing DTW on CPU..."
+                pu = "CPU"
         if (pu=="GPU"):
             if (distance!="ddtw") and (distance!="dtw"):
                 print "Il calcolo su Gpu e' sisponibile solo con dtw/ddtw"
@@ -242,26 +246,6 @@ class Means:
             self.__select_centroids()
             self.__compare()
             self.__control()
-
-#    def __control(self):
-#        ''' It checks if there are empty clusters or clusters with only one time series'''
-#        cond=zeros(self.k)
- #       while (0 in cond):
-  #          cond=ones(self.k)
-   #         for i in range(self.k): # cycle that records in cond the number of the series 'linked' to each centroid
-    #            cont=0
-     #           for j in range(self.r):
-      #              if self.min[j,0]==self.centroids[i]:
-       #                 cont+=1
-        #        if cont<=1:
-         #           print "EMPTY CLUSTER:RE-INIT"
-          #          self.reinit_maxiter+=1
-           #         if self.reinit_maxiter>100:
-            #            raise InitError("general error: I can't initialize the clusters, try changing distance measure or provide other dataset" )
-             #       self.__select_centroids() # if empty clusters are found this function reassign centroids and checks again
-              #      self.__compare()
-               #     cond[i]=0
-  
 
 
     def __calc_err(self):
