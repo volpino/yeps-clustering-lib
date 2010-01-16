@@ -69,7 +69,19 @@ class kNN:
                     pass
 
         else:
-            print 'you better use the weighted method you motherfucker!!!'
+            for i in range(self.k):
+                self.nn.append(self.label_list[self.dist_list.index(min(self.dist_list))])
+                self.dist_list[self.dist_list.index(min(self.dist_list))] = np.inf
+            for i in range(self.k):
+                if self.label_dict.__contains__(self.nn[i][0]) == False:
+                    self.label_dict[self.nn[i][0]] = 1
+                    self.keys.append(self.nn[i][0])
+                else:
+                    self.label_dict[self.nn[i][0]] = self.label_dict[self.nn[i][0]]+1
+            for i in range(len(self.keys)):
+                if self.ts_label == 0 or self.label_dict[self.keys[i]] > self.label_dict[self.ts_label]:
+                    self.ts_label = self.keys[i]
+
 
         return self.ts_label
 
@@ -82,7 +94,7 @@ if __name__ == '__main__':
     fast = False
     radius = 20
     k = 4
-    weight = True
+    weight = False
     nn = kNN(test_set,
              training_set,
              label_list,
