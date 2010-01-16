@@ -3,6 +3,7 @@
 import calc_dist as cd
 import numpy as np
 
+
 class kNN:
 
     def __init__(self, test_set, training_set, label_list, weight=True,
@@ -15,40 +16,36 @@ class kNN:
         self.fast = fast
         self.radius = radius
         self.pu=pu
-        self.labels = []
-        self.calc_list = []
-        self.tmp_matrix = []
-
-        for i in range(len(self.label_list)):
-            if self.labels.__contains__(self.label_list[i]) == False:
-                self.labels.append(self.label_list[i])
-            else:
-                pass
-
-        for i in range(len(self.training_set)):
-            self.tmp_matrix.append(self.training_set[i])
-        self.tmp_matrix.append(self.test_set)
-
-        for i in range(len(self.tmp_matrix) - 1):
-            self.calc_list.append((len(self.tmp_matrix) - 1, i))
 
     def compute(self, k=1):
         self.k = k
+        self.test_set_labels = []
+
+        for i in range(len(self.test_set)):
+            self.tmp_set = []
+            self.calc_list = []
+            self.dist_list = []
+            self.tmp_set.extend(training_set)
+            self.tmp_set.append(self.test_set[i])
+            for j in range(len(self.tmp_set) - 1):
+                self.calc_list.append((len(self.tmp_set) - 1, j))
+            self.dist_list_tmp = cd.Dist(self.tmp_set,
+                                         self.distance_type,
+                                         self.fast,
+                                         self.radius,
+                                         self.pu).compute(self.calc_list)
+            for j in range(len(self.dist_list_tmp)):
+            #from numpy array to list
+                self.dist_list.append(self.dist_list_tmp[j])
+            self.test_set_labels.append(self.run())
+
+        return self.test_set_labels
+
+    def run(self):
         self.nn = []
-        self.dist_list = []
         self.label_dict = {}
         self.keys = []
         self.ts_label = 0
-
-        self.dist_list_tmp = cd.Dist(self.tmp_matrix,
-                                     self.distance_type,
-                                     self.fast,
-                                     self.radius,
-                                     self.pu).compute(self.calc_list)
-
-        for i in range(len(self.dist_list_tmp)):
-        #from numpy array to list
-            self.dist_list.append(self.dist_list_tmp[i])
 
         if self.weight == True:
             for i in range(self.k):
@@ -78,7 +75,7 @@ class kNN:
 
 
 if __name__ == '__main__':
-    test_set = [1,2,3,4,5]
+    test_set = [[1,2,3,4,5],[5,4,3,2,1]]
     training_set = [[1,2,3,4,5],[5,4,3,2,1],[5,4,4,2,1],[2,2,3,4,5]]
     label_list = ['a','b','b','a']
     distance_type = 'dtw'
