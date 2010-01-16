@@ -24,11 +24,11 @@ class ClusterError (Exception):
 
 class Medoid:
     ''' class that manages the algorithm of k-medoid'''
-    def __init__(self, it=None, distance="ddtw", fast=False, radius=20, seed=None, tol=0.0001, pu="CPU"):
+    def __init__(self, it=None, distance="ddtw", fast=False, radius=20, seed=None, pu="CPU"):
         ''' This function gets the inputs which are: nrip:number of times the cycle of clustering must be run (if not defined
          the algorithm runs until the variants between the old and the new centroids is lower than const tol); the flag met defines
          the method by which the distance between series is calculated (dtw/ddtw/euclidean/pearson); fast: if True use fast dtw;
-         radius: define the accurancy of fastdtw; seed: parameter for random function; tol: define the precision of the kmedoid alghoritm'''
+         radius: define the accurancy of fastdtw; seed: parameter for random function'''
 
         if not distance in ["dtw", "ddtw", "euclidean", "pearson"]:
             raise ValueError("distance %s is not implemented" % distance)
@@ -45,13 +45,11 @@ class Medoid:
                 print "Il calcolo su Gpu e' sisponibile solo con dtw/ddtw"
                 distance="dtw"
 
-
         self.nrip=it
         self.met=distance
         self.fast=fast
         self.radius=radius
         self.seed=seed
-        self.error=tol
         self.pu=pu
 
     def compute(self, k, mat):
@@ -74,7 +72,7 @@ class Medoid:
         self.mat=self.mat.T
         self.r = self.mat.shape[0]
         self.l = calc_dist.Dist(self.mat,self.met, self.fast, self.radius, pu=self.pu)
-        
+
         self.__selectmedoid()
         self.__associate()
         self.__control()
@@ -295,6 +293,6 @@ class Medoid:
 if __name__ == "__main__":
     k = 2
     mat = array(   [[0,0,0,1,1,1,2,2,2,12,12,12,13,13,13,14,14,14,0,0,0,1,1,1,2,2,2],[0,1,2,0,1,2,0,1,2,7,8,9,7,8,9,7,8,9,10,11,12,10,11,12,10,11,12]] )
-    m = Means(None,ddtw,False,20,None,0.0001)
-    print compute(k,mat)
+    m = Medoid(None,'ddtw',False,20,None)
+    print m.compute(k,mat)
 
