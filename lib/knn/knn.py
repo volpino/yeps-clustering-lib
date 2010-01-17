@@ -31,7 +31,7 @@ class kNN:
             self.tmp_set = []
             self.calc_list = []
             self.dist_list = []
-            self.tmp_set.extend(training_set)
+            self.tmp_set.extend(self.training_set)
             self.tmp_set.append(self.test_set[i])
             for j in range(len(self.tmp_set) - 1):
                 self.calc_list.append((len(self.tmp_set) - 1, j))
@@ -93,7 +93,7 @@ class kNN:
 
 
 if __name__ == '__main__':
-    test_set = [[1,2,3,4,5],[5,4,3,2,1]]
+    test_set = [[1,2,3,4,5],[5,4,3,2,1],[2,2,3,4,5],[5,4,4,2,1]]
     training_set = [[1,2,3,4,5],[5,4,3,2,1],[5,4,4,2,1],[2,2,3,4,5]]
     label_list = ['a','b','b','a']
     distance_type = 'dtw'
