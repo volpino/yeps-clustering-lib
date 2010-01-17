@@ -3,7 +3,7 @@
 
         
 
-from numpy import array, zeros, ones, inf,random,empty
+from numpy import array, zeros, ones, inf,random,empty,resize
 import scipy.stats
 import dtw_cpu
 import time
@@ -76,8 +76,6 @@ class Means:
         
         self.centroids = zeros(k)
         self.centroids-=1
-        self.memo= zeros((mat.shape[1],mat.shape[1]))
-        self.memo-=1
         self.min = zeros((mat.shape[1], 2))
         self.reinit_maxiter=0
         if self.seed==None:
@@ -89,7 +87,7 @@ class Means:
         self.mat = mat.astype(float)
         self.mat=self.mat.T
         self.r = self.mat.shape[0]
-        self.l=calc_dist.Dist(self.mat,self.distance, self.fast, self.radius, self.pu)
+        self.mat=resize(self.mat,(self.r+self.k,self.mat.shape[1]))
         
         self.__select_centroids() # calls the function that assigns random centroids
         self.__compare()    # calls the function that puts each time series with the most similar centroid
@@ -107,14 +105,13 @@ class Means:
         else:
             for i in range(self.nrip-1):
                 self.__newcentroids()
-                self.__compare()
-       
+                self.__compare()       
+        centroids_outp=self.mat[self.r:self.r+self.k].copy()
+        self.mat=resize(self.mat,(self.r,self.mat.shape[1]))
         self.min=self.min[:,0]
-        self.min+=1
-        self.centroids+=1
-        self.centroids=self.centroids.astype(int)
+        self.min=self.min-self.r+1
         self.min=self.min.astype(int)
-        return self.centroids,self.min
+        return centroids_outp,self.min
 
 
     def __select_centroids(self):
@@ -189,6 +186,7 @@ class Means:
 
     def __compare_gpu(self):
         ''' It assignes each series to the nearest centroid '''
+        l=calc_dist.Dist(self.mat,self.distance, self.fast, self.radius, self.pu)
         li=[]
         lista=[]
         cont=0
@@ -198,11 +196,11 @@ class Means:
                 cont+=1
                 if cont>150000:
                     cont=0
-                    temp=self.__mem(li)
+                    temp=l.compute(li)
                     lista.extend(temp)
                     li=[]
 
-        lista.extend(self.__mem(li))
+        lista.extend(l.compute(li))
 
         for i in range(self.r): # cycle that scrolls every time series
             minimum=inf
@@ -214,25 +212,8 @@ class Means:
 
 
     def __mem (self, li):
-        temp=empty(len(li))
-        index=[]
-        for i in range(len(li)):
-            if self.memo[li[i][0],li[i][1]]!=-1:
-                temp[i]=self.memo[li[i][0],li[i][1]]
-                li[i] = -1;
-            else:
-                index.append(i)
-        while -1 in li:
-            li.remove(-1);
-
-        ris=self.l.compute(li)
-
-        for i in range(len(ris)):
-            self.memo[li[i][0],li[i][1]]=ris[i]
-            temp[index[i]]=ris[i]
-
-        return temp
-
+        l=calc_dist.Dist(self.mat,self.distance, self.fast, self.radius, self.pu)
+        ris=l.compute(li)
 
     def __control(self):
         cond=zeros(self.r)
@@ -274,13 +255,8 @@ class Means:
 
             media /= index
             mini = inf
-            for j in range(self.r):     # finds the time series wich has the closest distance to the average of the distances from the centroid to each time series in that cluster
-                if self.min[j,0] == self.centroids[i]:
-                    dif=self.__difference(self.mat[j].copy(),media.copy())
-                    if mini>dif:
-                        mini = dif
-                        centroi = j
-            self.centroids[i]=centroi
+            self.mat[self.r+i]=media.copy()
+            self.centroids[i]=self.r+i
 
 
 
