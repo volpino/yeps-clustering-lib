@@ -9,13 +9,11 @@ class LoadCSVError(Exception):
     """
     pass
 
-
 class SaveCSVError(Exception):
     """
     CSV saving error
     """
     pass
-
 
 def load_csv(fn, delim='|'):
     """
@@ -34,7 +32,8 @@ def load_csv(fn, delim='|'):
         title = content[0][0]
         headerv = [content[i][0] for i in range(1, len(content))]
         headerh = content[0][1::]
-        y = np.array([content[i][1::] for i in range(1, len(headerv) + 1)], dtype=np.float)
+        y = np.array([content[i][1::] for i in range(1, len(headerv) + 1)],
+                     dtype=np.float)
     except:
         raise LoadCSVError
     else:
@@ -54,9 +53,3 @@ def save_csv(fn, x, y, header, title="", delim='|'):
         csvwriter.writerows(rows)
     except:
         raise SaveCSVErrror
-
-if __name__ == "__main__":
-    x, y, header, title = load_csv("/home/fox/svn/trunk/data-management/time-series/huglin.csv")
-    print y[0][5]
-    #print header, title
-    #save_csv("/tmp/prova.csv", x,y,header, title)

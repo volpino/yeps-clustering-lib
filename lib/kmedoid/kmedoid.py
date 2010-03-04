@@ -1,7 +1,4 @@
-#!/usr/bin/python
-
 __all__ = ["Medoid"]
-
 
 from numpy import array, sqrt, zeros, inf,random,empty
 import scipy.stats

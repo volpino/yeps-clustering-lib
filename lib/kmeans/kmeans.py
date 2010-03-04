@@ -1,8 +1,3 @@
-#!/usr/bin/python
-
-
-        
-
 from numpy import array, zeros, ones, inf,random,empty,resize
 import scipy.stats
 import dtw_cpu
@@ -10,19 +5,28 @@ import time
 import calc_dist
 
 class DistanceError (Exception):
-    '''Distance calculation method not supported'''
+    '''
+    Distance calculation method not supported
+    '''
     pass
 
 class IterationError (Exception):
-    '''Iteration count must be bigger than 1'''
+    '''
+    Iteration count must be bigger than 1
+    '''
     pass
 
 class ClusterError (Exception):
-    '''number of cluster can't be bigger than half of the total number of tseries'''
+    '''
+    number of cluster can't be bigger than half of the total number of tseries
+    '''
     pass
 
 class InitError (Exception):
-    '''general error: I can't initialize the clusters, try changing distance measure or provide other dataset'''
+    '''
+    general error: I can't initialize the clusters, try changing distance
+    measure or provide other dataset
+    '''
     pass
 
 class Means:
@@ -41,28 +45,28 @@ class Means:
         '''
         if not distance in ["dtw", "ddtw", "euclidean", "pearson"]:
             raise DistanceError("distance %s is not implemented" % distance)
-        if (it<1) and (it!=None):
+        if (it < 1) and (it != None):
             raise IterationError("it must be bigger than zeros" )
         if pu == "GPU":
             try:
-                from dtw_gpu import dtw_gpu
+                import dtw_gpu
             except ImportError:
                 print "No suitable hardware! Doing DTW on CPU..."
                 pu = "CPU"
         if (pu=="GPU"):
-            if (distance!="ddtw") and (distance!="dtw"):
-                print "Il calcolo su Gpu e' sisponibile solo con dtw/ddtw"
+            if (distance != "ddtw") and (distance != "dtw"):
+                print "Il calcolo su Gpu e' disponibile solo con dtw/ddtw"
                 distance="dtw"
 
         self.nrip=it
         self.distance=distance
         self.fast=fast
-        self.radius=radius    
+        self.radius=radius
         self.seed=seed
         self.error=tol
         self.pu=pu
-        
-       
+
+
     def compute (self, k, mat):
         '''
         This function takes: number of trends, k; a matrix, mat,
@@ -73,7 +77,7 @@ class Means:
         '''
         if (k>mat.shape[1]/2):
             raise ClusterError("The number of cluster can't be bigger than half of the total number of tseries" )
-        
+
         self.centroids = zeros(k)
         self.centroids-=1
         self.min = zeros((mat.shape[1], 2))
@@ -88,7 +92,7 @@ class Means:
         self.mat=self.mat.T
         self.r = self.mat.shape[0]
         self.mat=resize(self.mat,(self.r+self.k,self.mat.shape[1]))
-        
+
         self.__select_centroids() # calls the function that assigns random centroids
         self.__compare()    # calls the function that puts each time series with the most similar centroid
         self.__control()    # calls the function that checks that no empty clusters came out from the random choice
@@ -96,7 +100,7 @@ class Means:
         new_error = old_error*(2.0+self.error)
         cont=0
         if not self.nrip:
-            while (abs(new_error/old_error-1.0)>self.error) and (cont<500): 
+            while (abs(new_error/old_error-1.0)>self.error) and (cont<500):
                 self.__newcentroids()   # calls the function that calculates new centroids
                 self.__compare()
                 cont+=1
@@ -105,7 +109,7 @@ class Means:
         else:
             for i in range(self.nrip-1):
                 self.__newcentroids()
-                self.__compare()       
+                self.__compare()
         centroids_outp=self.mat[self.r:self.r+self.k].copy()
         self.mat=resize(self.mat,(self.r,self.mat.shape[1]))
         self.min=self.min[:,0]
@@ -132,11 +136,11 @@ class Means:
             self.__compare_gpu()
         else:
             self.__compare_cpu()
- 
-       
+
+
     def __compare_cpu(self):
         ''' It assignes each series to the nearest centroid '''
-        for i in range(self.r):	# cycle that scrolls every time series
+        for i in range(self.r): # cycle that scrolls every time series
             listdiff = zeros(self.k)
             for j in range(self.k):
                 listdiff[j] = self.__difference(self.mat[i].copy(), self.mat[self.centroids[j]].copy()) # records in listdiff the distance between the time series i and the centroid self.centroids[j]
@@ -144,7 +148,7 @@ class Means:
             for j in range(self.k):
                 if val > listdiff[j]:
                     val=listdiff[j]
-                    self.min[i,0] = self.centroids[j]	# self.min is a matrix that contains a line for each time series, in the first it's recorded the centroid from which it is closer and in the second the distance from that centroid
+                    self.min[i,0] = self.centroids[j]   # self.min is a matrix that contains a line for each time series, in the first it's recorded the centroid from which it is closer and in the second the distance from that centroid
                     self.min[i,1] = val
 
 
@@ -177,7 +181,7 @@ class Means:
             val += (a[i] - b[i])**2
         return val
 
-    
+
     def __difference_pearson (self, a, b):
         ''' It returns the distance between 2 series computed with the Pearson correlation '''
         t=scipy.stats.pearsonr(a, b)

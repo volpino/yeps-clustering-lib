@@ -6,17 +6,17 @@
 #include <Python.h>
 #include <numpy/arrayobject.h>
 
-/* C implementation of the DTW/FastDTW algorithm, usin a recursive function to calculate the min distance. 
- *The recursive function starts from the left bottom edge of the matrix and calculates recursively the min path to reach the top right edge. For each  
- *cell it stores the minimum path returned by adiacent cell. The calculation stops when the top right edge is reached by all of the recoursion  
- *launched. 
+/* C implementation of the DTW/FastDTW algorithm, usin a recursive function to calculate the min distance.
+ *The recursive function starts from the left bottom edge of the matrix and calculates recursively the min path to reach the top right edge. For each
+ *cell it stores the minimum path returned by adiacent cell. The calculation stops when the top right edge is reached by all of the recoursion
+ *launched.
  *
  *The main func is totally useless, only the DTW func should be used. The parameters should be passed in this order:
  *(double* frist_time_series, int frist_time_series_len, double* second_time_series, int frist_time_series_len, int radius, point_t* path, int deri
  *Radius is a parameter for the FastDTW algorithm, pass -1 to use the classic DTW, only positive (or zero) value are allowed (execpt for -1)
  *increasing radius means more accurate result, but may decrease (even significantly) the speed.
- *If path is NULL, the path isn't returned, else the path will be written into path pointer; path should be already allocated, the maximum lenght of 
- *path is len_frist_series + len_second_seies +1 . The end of the path array is signaled by x and y values set to -1. 
+ *If path is NULL, the path isn't returned, else the path will be written into path pointer; path should be already allocated, the maximum lenght of
+ *path is len_frist_series + len_second_seies +1 . The end of the path array is signaled by x and y values set to -1.
  *If deriv is 1 the calculation is made on the derivatives of the two series.
  */
 
@@ -51,7 +51,7 @@ void deriv_calc(double *a,int l)
 	a[l-1]=a[l-2]-(a[l-3]-a[l-2]);
 }
 
-void fill_matrix(double **matrix, double* s1, int len_s1, double* s2, int len_s2) //fill the distance matrix 
+void fill_matrix(double **matrix, double* s1, int len_s1, double* s2, int len_s2) //fill the distance matrix
 {
 	int i,j;  // counters
 	for(i = 0; i < len_s1; i+=1) //iteration throug the x axis
@@ -64,11 +64,11 @@ void fill_matrix(double **matrix, double* s1, int len_s1, double* s2, int len_s2
 }
 
 double short_path(double **matrix, int len_x, int len_y, point_t* path) //calculates the shortest path
-{	
+{
 	//double d_values[len_x][len_y];  //min path matrix
 	double **d_values = malloc(sizeof(double*) * len_x);
 	int i,j,n; //counters
-	double res; 
+	double res;
 	double next(int x, int y)   //recursive function that goes throug the distance matrix and stores into the min matrix the minumum distance from each cell to the end of the matrix.
 	{
 		double a,b,c;
@@ -79,7 +79,7 @@ double short_path(double **matrix, int len_x, int len_y, point_t* path) //calcul
 		b = next(x+1, y+1);
 		c = next(x+1,y);
 		d_values[x][y] = min(a,b,c) + matrix[x][y]; //calculate the value for the curren cell
-		return d_values[x][y]; 
+		return d_values[x][y];
 	}
 
 	for (i=0; i < len_x; i++)
@@ -165,9 +165,9 @@ void fast_fill_matrix(double **matrix, point_t *window, int radius, double* s1, 
 		for (x = (window[i].x*2)-radius-2; x <=(window[i].x*2)+radius+1; x += 1)
 		{
 			for(y = (window[i].y*2)-radius-2; y <= (window[i].y*2)+radius+1; y +=1)
-			{		
+			{
 				if ((x < len_s1 && x > -1) && (y < len_s2 && y > -1))
-					matrix[x][y] = pow((x - y),2) + pow((s1[x] - s2[y]),2);		
+					matrix[x][y] = pow((x - y),2) + pow((s1[x] - s2[y]),2);
 			}
 		}
 	}
@@ -220,7 +220,7 @@ double euclidean(double* s1, int len_s1, double* s2, int len_s2)
 double main_DTW(double* s1, int len_s1, double* s2, int len_s2, int radius, point_t* path, int eucli, int deriv)
 {
 	process_input(s1, s2, len_s1, len_s2, radius, deriv);
-	if (deriv && !eucli) 
+	if (deriv && !eucli)
 	{
 		deriv_calc(s1, len_s1);
 		deriv_calc(s2, len_s2);
@@ -259,7 +259,7 @@ static PyObject *dtw_cpu_compute_dtw(PyObject *self, PyObject *args, PyObject *k
     return NULL;
   ac = PyArray_FROM_OTF(a, NPY_DOUBLE, NPY_IN_ARRAY|NPY_ENSURECOPY);
   bc = PyArray_FROM_OTF(b, NPY_DOUBLE, NPY_IN_ARRAY|NPY_ENSURECOPY);
-	
+
   adata = (double *) PyArray_DATA(ac);
   bdata = (double *) PyArray_DATA(bc);
   andim = PyArray_NDIM(ac);
@@ -268,7 +268,7 @@ static PyObject *dtw_cpu_compute_dtw(PyObject *self, PyObject *args, PyObject *k
   if ((andim != 1) || (bndim != 1))
     {
       PyErr_SetString(PyExc_ValueError, "a and b should be 1D array");
-      return NULL;      
+      return NULL;
     }
 
   an = PyArray_DIM(ac, 0);
@@ -285,7 +285,7 @@ static PyObject *dtw_cpu_compute_dtw(PyObject *self, PyObject *args, PyObject *k
     euclidean_ = 1;
   }
   ret = main_DTW(adata, an, bdata, bn, arg1, path_, euclidean_, derivative_);
-  
+
   Py_DECREF(ac);
   Py_DECREF(bc);
 
@@ -326,7 +326,7 @@ dtw_cpu_doc},
 void initdtw_cpu(){
 	import_array();
   	Py_InitModule3("dtw_cpu", dtw_cpu_methods, module_doc);
-  	
+
 }
 
 void process_input(double* a1, double* a6, int a2, int a3, int a4, int a5)

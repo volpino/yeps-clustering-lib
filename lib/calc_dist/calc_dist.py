@@ -40,7 +40,7 @@ class Dist:
                 import dtw_cpu
                 self.dtw_cpu = dtw_cpu
             else:
-                self.gpu = dtw_gpu._DTW_(matrix)
+                self.gpu = dtw_gpu.DTW(matrix)
         else:
             pu = "CPU"
             import dtw_cpu
@@ -57,13 +57,13 @@ class Dist:
         elif self.mode == "euclidean":
             self.euclidean = True
 
-    def compute(self, li):
+    def compute(self, l):
         '''
             <Does the actual calculations.>
 
             Input Parameters:
 
-                li: list of tuples containg indices of couples of time
+                l: list of tuples containg indices of couples of time
                     series between which distace has to be calculated.
                     Indices refears to matrix passed at the init func.
 
@@ -74,12 +74,12 @@ class Dist:
                 are in the order of input.
         '''
         if self.pu == "GPU":
-            res = self.gpu.compute_dtw(li)
+            res = self.gpu.compute_dtw(l)
         elif self.pu == "CPU":
             res = numpy.array([])
-            for qui in li:
-                tmp = self.dtw_cpu.compute_dtw(self.matrix[qui[0]],
-                                          self.matrix[qui[1]],
+            for e in l:
+                tmp = self.dtw_cpu.compute_dtw(self.matrix[e[0]],
+                                          self.matrix[e[1]],
                                           self.euclidean,
                                           False,
                                           self.derivative,
