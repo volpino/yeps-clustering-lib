@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import numpy
 
 class Dist:
@@ -31,39 +32,40 @@ class Dist:
 
                 None
         '''
-        if pu == "GPU":
-            try:
-                from dtw_gpu import dtw_gpu
-            except ImportError:
-                print "No suitable hardware! Doing DTW on CPU..."
-                pu = "CPU"
-                import dtw_cpu
-                self.dtw_cpu = dtw_cpu
-            else:
-                self.gpu = dtw_gpu.DTW(matrix)
-        else:
-            pu = "CPU"
-            import dtw_cpu
-            self.dtw_cpu = dtw_cpu
         self.pu = pu
         self.matrix = matrix
         self.mode = mode
         self.fast = fast
         self.radius = radius
         self.derivative = False
-        self.euclidean = False
+        self.euclidean = False        
         if self.mode == "ddtw":
             self.derivative = True
         elif self.mode == "euclidean":
             self.euclidean = True
+            
+        if self.pu == "GPU":
+            try:
+                from gpu_distance import GpuDistance
+            except ImportError:
+                print "No suitable hardware! Doing DTW on CPU..."
+                self.pu = "CPU"
+                import dtw_cpu
+                self.dtw_cpu = dtw_cpu
+            else:
+                self.gpu = GpuDistance(matrix, self.mode, self.derivative)
+        else:
+            pu = "CPU"
+            import dtw_cpu
+            self.dtw_cpu = dtw_cpu
 
-    def compute(self, l):
+    def compute(self, li):
         '''
             <Does the actual calculations.>
 
             Input Parameters:
 
-                l: list of tuples containg indices of couples of time
+                li: list of tuples containg indices of couples of time
                     series between which distace has to be calculated.
                     Indices refears to matrix passed at the init func.
 
@@ -74,12 +76,12 @@ class Dist:
                 are in the order of input.
         '''
         if self.pu == "GPU":
-            res = self.gpu.compute_dtw(l)
+            res = self.GpuDistance.launch(li)
         elif self.pu == "CPU":
             res = numpy.array([])
-            for e in l:
-                tmp = self.dtw_cpu.compute_dtw(self.matrix[e[0]],
-                                          self.matrix[e[1]],
+            for qui in li:
+                tmp = self.dtw_cpu.compute_dtw(self.matrix[qui[0]],
+                                          self.matrix[qui[1]],
                                           self.euclidean,
                                           False,
                                           self.derivative,

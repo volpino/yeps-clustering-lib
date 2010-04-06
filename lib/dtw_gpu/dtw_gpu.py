@@ -1,423 +1,130 @@
-try:
-    import pycuda.driver as drv
-    import pycuda.compiler as compiler
-    import pycuda.autoinit
-except:
-    raise ImportError("Cannot find PyCUDA")
-import numpy as np
+#!/usr/bin/env python
 
-class DTW:
-
-    def compute_dtw(self, li):
-        self.f = self.f_c.get_function("compute_dtw")
-        self.f_euclidean = self.f_c.get_function("EUCLIDEAN")
-        atts = {}
-        for att, value in drv.Device(0).get_attributes().iteritems():
-            atts[str(att)] = value
-        a = drv.Device(0).total_memory()
-        n_float = a / 4 # (a*8)/32
-        n_blocks = atts['MULTIPROCESSOR_COUNT']
-        n_threads = atts['MAX_THREADS_PER_BLOCK']
-        res = np.array([])
-        while len(li)>0:
-            for i in range(n_blocks, 0, -1):
-                if len(li) % i == 0:
-                    break
-            self.blocks = i
-            self.needed_threads = len(li) / self.blocks
-            if self.needed_threads < n_threads:
-                tmp = self.tmp_calc(li)
-                res = np.append(res, tmp)
-                break
-            else:
-                self.blocks_ = self.blocks
-                self.needed_threads_ = self.needed_threads
-                while self.needed_threads > n_threads:
-                    for i in range(n_blocks, 0, -1):
-                        if len(li)%i == 0:
-                            break
-                        self.blocks = i
-                        self.needed_threads = len(li) / self.blocks
-                    if self.blocks_ == self.blocks and self.needed_threads_ == \
-                            self.needed_threads:
-                        self.needed_threads = n_threads
-                        break
-                tmp = self.tmp_calc(li)
-                res = np.append(res, tmp)
-                li = li[n_threads*self.blocks:]
-        return res
-
-    def tmp_calc(self, li):
-        res = None
-        c = 0
-        while res is None:
-            if c != 0:
-                print "[OMG] Oh my RAM :O (trying with needed_threads = ", \
-                      self.needed_threads, ")"
-                self.needed_threads -= int(75 * self.needed_threads / self.s)
-            li_=li[:self.needed_threads*self.blocks]
-            res = self.calc(li_)
-            c+=1
-        return res
-
-    def calc(self, li):
-        a = drv.Device(0).total_memory()
-        n_float = a / 4 # (a*8)/32
-        res = np.empty([1, len(li)])
-        len_li = np.array([len(self.matrix[0])])
-        tmp = []
-        for e in li:
-            s1 = self.matrix[e[0]]
-            s2 = self.matrix[e[1]]
-            for i in s1:
-                tmp.append(i)
-            for i in s2:
-                tmp.append(i)
-        series = np.array(tmp)
-        matrix = len(self.matrix[li[0][0]])*4*len(li)
-        matrix = np.empty([1, matrix])
-        if self.derivative:
-            deriv = 1.0
-        else:
-            deriv = 0.0
-        deriv = np.array([deriv])
-        len_in = len_li
-        len_in = len_in.astype(np.float32)
-        series = series.astype(np.float32)
-        matrix = matrix.astype(np.float32)
-        res = res.astype(np.float32)
-        s = (1 + series.shape[0] + matrix.shape[1] + res.shape[1] + 1)
-        self.s = s*100.0/n_float
-        if (s * 100.0 / n_float > 75):
-            return
-        if self.euclidean:
-            self.f_euclidean(drv.In(len_in),
-                             drv.In(series),
-                             drv.In(matrix),
-                             drv.Out(res),
-                             drv.In(deriv),
-                             block=(self.needed_threads,1,1),
-                             grid=(self.blocks,1))
-        else:
-            self.f(drv.In(len_in),
-                   drv.In(series),
-                   drv.In(matrix),
-                   drv.Out(res),
-                   drv.In(deriv),
-                   block=(self.needed_threads,1,1),
-                   grid=(self.blocks,1))
-        return res
-
-    def check_hw(self):
-        n = drv.Device.count()
-        if n == 0: return -1
+class GpuDistance(object):
+    try:
+        import pycuda.driver as driver
+        import pycuda.compiler as compiler
+        import pycuda.autoinit
+    except:
+        raise ImportError("Cannot find PyCUDA")
+    import numpy    
+    
+    def hwCheck(self):
+        n = self.driver.Device.count()
+        if n == 0: return -1	
         return n
+	
+    def printFeatures(self, device):
+        print "SM count: ", self.driver.Device(device).multiprocessor_count
+        print "Max shared memory per block: ", self.driver.Device(device).max_shared_memory_per_block
+        print "Max registers per block: ", self.driver.Device(device).max_registers_per_block
+        print "Max threads per block: ", self.driver.Device(device).max_threads_per_block
+        print "Max block x: ", self.driver.Device(device).max_block_dim_x					
+        print "Max block y: ", self.driver.Device(device).max_block_dim_y
+        print "Max block z: ", self.driver.Device(device).max_block_dim_z
+        print "Max gird x: ", self.driver.Device(device).max_grid_dim_x
+        print "Max gird y: ", self.driver.Device(device).max_grid_dim_y
+        print "Max gird z: ", self.driver.Device(device).max_grid_dim_z
 
-    def __init__(self, matrix, derivative = False, euclidean = False):
-        self.matrix = matrix
-        self.derivative = derivative
-        self.euclidean = euclidean
-        if self.check_hw() == -1: print "Hw not supported."
-        self.f_c = compiler.SourceModule("""
-#include <float.h>
+    def launch(self, dtwlist_in):
+        function = self.source.get_function('calc_dtw')
+        
+        dtwlist = self.numpy.array(dtwlist_in)
+        dtwlist = dtwlist.astype(self.numpy.float32)
+        dtwnum = dtwlist.__len__()       
+        results = self.numpy.empty(dtwnum)
+        results = results.astype(self.numpy.float32)
+        param = self.numpy.array(self.len)
+        param = param.astype(self.numpy.float32)
+        
+        if self.len < 512:
+            threadsPerBlock = self.len
+        else:
+            threadsPerBlock = 512
+        
+        function(self.matrix_gpu, self.driver.In(dtwlist),self.driver.In(param), self.driver.Out(results), block = (threadsPerBlock,1,1), grid = (dtwnum,1) )
 
-__device__ void deriv_calc(float *a,int l)
+        print results
+
+    def __init__(self, matrix, mode = "DTW" , deriv = True):
+        self.matrix = self.numpy.array(matrix)
+        self.matrix = self.matrix.astype(self.numpy.float32)
+        self.matrix_gpu = driver.mem_alloc(matrix.nbytes)
+        driver.memcpy_htod(matrix_gpu, matrix)
+        self.len = self.matrix[0].__len__()
+        self.method = mode
+        self.source = self.compiler.SourceModule("""
+#define MAX_THREADS_PER_BLOCK 512
+
+__global__ void calc_dtw(float* series, float* dtws, float* param, float *results)
 {
-    int i;
-    float t,te;
 
-    t=a[0];
-    for (i=1;i<l-1;i+=1)
-    {
-        te=a[i];
-        a[i]=((a[i]-t)+((a[i+1]-t)/2))/2;
-        t=te;
-    }
-    a[0]=a[1]-(a[2]-a[1]);
-    a[l-1]=a[l-2]-(a[l-3]-a[l-2]);
-}
-
-
-////// QUESTA E' PER CUDA
-__global__ void DTW(float* len_in, float* series, float* matrix, float* res, float* deriv)
-{
-    //WARNING: il kernel deve essere inizializzati in block mono-dimensionali.
-    //eg: DTW <<< M, K>>>(float* len_in, float* series, float* matrix, float* res, float* deriv)
-    //dove: M e' uno scalare, indica il numero di blocks (multicore) su cui viene eseguito il kernel
-    //dove: K e' uno scalare, indica il numero di threads eseguiti per ogni block.
-
-    //DESCRIZIONE INPUT
-    //len_in :  lunghezza delle serie in input
-    //series:   puntatore al primo elemento dell'array delle serie
-    //      (tutte le serie sono concatenate, ogni thread lavora sulla coppia corrispondente al proprio idx)
-    //
-    //matrix:   puntatore al blocco di memoria allocato dalla CPU utilizzato per i calcoli per la DTW,
-    //      deve essere len_in*len_in*2*N dove N e' il numero di threads inizializzati
-    //      (tutto lo spazio in un'unica array concatenata, ogni thread lavora sull'area di memoria
-    //      corrispondente al proprio idx)
-    //
-    //res:      puntatore all'area in cui vengono scritti i risultati delle DTW, deve essere lungo N.
-    //
-    //deriv:    flag che indica se effettuare la derivata sulle serie in imput, 0 per falso, vero altrimenti.
-    //
-
-    int len = (int)len_in[0];
-    int s_size = len;
-    int m_size = len*len;
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    float *s1 = series+(s_size*idx*2);
-    float *s2 = series+((s_size*idx*2)+s_size);
-    float *d_matrix = matrix+(m_size*idx*2);
-    float *d_values = matrix+((m_size*idx*2)+m_size);
-
+    int len = param[0];
     int i,j;
-    if((int)deriv[0]){ deriv_calc(s1, len); deriv_calc(s2, len);}
+    //alloc d_val and p_val in the shared scope
+    /*instead of allocating the whole distance and path matrixs, we only use 2 rows of each at a time. Hence, the memory usage is linear and 
+    shared memory can be used. I.E. d_val_l is the lover row of the distance matrix, p_val_u is the upper one in the path matrix. 
+    We iterate through the matrix continously updating these two rows, at the end of each iteration the upper rows becomes the lover ones, 
+    and new upper rows are initialized.*/
+    __shared__ float d_val_u_main[MAX_THREADS_PER_BLOCK];
+    __shared__ float d_val_l_main[MAX_THREADS_PER_BLOCK];
+    __shared__ float p_val_u_main[MAX_THREADS_PER_BLOCK];
+    __shared__ float p_val_l_main[MAX_THREADS_PER_BLOCK];
+    float* d_val_u = d_val_u_main;
+    float* d_val_l = d_val_l_main;
+    float* p_val_u = p_val_u_main;
+    float* p_val_l = p_val_l_main;
+    float* ex;    
+    float* s1 = series+len*((int)dtws[blockIdx.x*2]);
+    float* s2 = series+len*((int)dtws[blockIdx.x*2+1]);
+    
+    //create distance table initializing d_val_l
+    d_val_l[threadIdx.x] = ((0-threadIdx.x)*(0-threadIdx.x)) + ((s1[0] - s2[threadIdx.x])*(s1[0] - s2[threadIdx.x]));
 
-    //riempio la matrice con le distanze e inizializzo quella per lo short path
-    for(i = 0; i < len; i+=1)
+    if (threadIdx.x == 0) //this part is not parallelizable, so only one thread per block does all the work =(
     {
-        for(j = 0; j < len; j += 1)
+        	p_val_l[0] = d_val_l[0]; //initialize p_val_l
+	        for (i = 0; i < len-1; i++)
+		        p_val_l[i+1] = p_val_l[i] + d_val_l[i+1];
+    }        
+    __syncthreads();
+    
+    //here comes the fun
+    for (i = 1; i < len; i++) //let's go through all the matrix
+    {
+        d_val_u[threadIdx.x] = ((i-threadIdx.x)*(i-threadIdx.x)) + ((s1[i] - s2[threadIdx.x])*(s1[i] - s2[threadIdx.x])); // initialize d_val_u
+       
+        p_val_u[threadIdx.x] = p_val_l[threadIdx.x] + d_val_u[threadIdx.x];        //search shortest path
+        __syncthreads();
+        
+        if((p_val_u[threadIdx.x+1] > d_val_u[threadIdx.x+1] + p_val_l[threadIdx.x]) && threadIdx.x != MAX_THREADS_PER_BLOCK  && threadIdx.x < len-1) 
+            p_val_u[threadIdx.x+1] = d_val_u[threadIdx.x+1] + p_val_l[threadIdx.x];    
+        __syncthreads();
+        
+        for(j = threadIdx.x; j != MAX_THREADS_PER_BLOCK && j < len-1; j++) 
         {
-            *(d_matrix+(i*len + j)) = sqrt(((i-j)*(i-j)) + ((s1[i] - s2[j])*(s1[i] - s2[j])));
-            *(d_values+(i*len + j)) = FLT_MAX;
+            if (p_val_u[j] + d_val_u[j+1] < p_val_u[j+1])
+            {
+                //__syncthreads();
+                p_val_u[j+1] = p_val_u[j] + d_val_u[j+1];
+            }
+            else break;
         }
+        __syncthreads();
+        
+        ex = d_val_u;    //exchanging pointers....
+		d_val_u = d_val_l;
+		d_val_l = ex;
+		ex = p_val_u;
+		p_val_u = p_val_l;
+		p_val_l = ex;
     }
-
-    //inizializzo il primo elemento
-    *d_values = *d_matrix;
-
-    // riempio la matrice per lo short path eccetto l'ultima riga e l'ultima colonna
-    for(i = 0; i < len-1; i+=1)
+    __syncthreads();
+    
+    //we're done! =) Only remains to return the result!
+    if (threadIdx.x == 0) //last operation.... only one thread works
     {
-        for(j = 0; j < len-1; j += 1)
-        {
-            *(d_values+((i+1)*len + j+1)) = *(d_values+(i*len + j)) + *(d_matrix+((i+1)*len + j + 1));
-            if(*(d_values+(i*len + j)) + *(d_matrix+(i*len + j+1)) < *(d_values+(i*len + j+1)))
-                *(d_values+(i*len + j+1)) = *(d_values+(i*len + j)) + *(d_matrix+(i*len + j+1));
-            if(*(d_values+(i*len + j)) + *(d_matrix+((i+1)*len + j)) < *(d_values+((i+1)*len + j)))
-                *(d_values+((i+1)*len + j)) = *(d_values+(i*len + j)) + *(d_matrix+((i+1)*len + j));
-        }
+        results[blockIdx.x] = p_val_l[len-1];
     }
-    //riempio l'ultima riga e l'ultima colonna (senza l'ultima cella)
-    i = len-1;
-    for (j = 0; j < len-1; j +=1)
-    {
-        if(*(d_values+(i*len + j)) + *(d_matrix+(i*len + j+1)) < *(d_values+(i*len + j+1)))
-            *(d_values+(i*len + j+1)) = *(d_values+(i*len + j)) + *(d_matrix+(i*len + j+1));
-    }
-    j = len-1;
-    for (i = 0; i < len-1; i +=1)
-    {
-        if(*(d_values+(i*len + j)) + *(d_matrix+((i+1)*len + j)) < *(d_values+((i+1)*len + j)))
-            *(d_values+((i+1)*len + j)) = *(d_values+(i*len + j)) + *(d_matrix+((i+1)*len + j));
-    }
-    // i e j sono len-1, metto a posto l'ultima cella
-    if (*(d_values+((i-1)*len + j)) + *(d_matrix+(i*len + j)) < *(d_values+(i*len + j)))
-        *(d_values+(i*len + j)) = *(d_values+((i-1)*len + j)) + *(d_matrix+(i*len + j));
-    if (*(d_values+((i-1)*len + j-1)) + *(d_matrix+(i*len + j)) < *(d_values+(i*len + j)))
-        *(d_values+(i*len + j)) = *(d_values+((i-1)*len + j-1)) + *(d_matrix+(i*len + j));
-    if (*(d_values+((i)*len + j-1)) + *(d_matrix+(i*len + j)) < *(d_values+(i*len + j)))
-        *(d_values+(i*len + j)) = *(d_values+(i*len + j-1)) + *(d_matrix+(i*len + j));
-
-    res[idx] = *(d_values+(i*len + j));
 }
-
-
-//USA POCA RAM
-__global__ void compute_dtw(float* len_in, float* series, float* matrix, float* res, float* deriv)
-{
-    //WARNING: il kernel deve essere inizializzati in block mono-dimensionali.
-    //eg: DTW <<< M, K>>>(float* len_in, float* series, float* matrix, float* res, float* deriv)
-    //dove: M e' uno scalare, indica il numero di blocks (multicore) su cui viene eseguito il kernel
-    //dove: K e' uno scalare, indica il numero di threads eseguiti per ogni block.
-
-    //DESCRIZIONE INPUT
-    //len_in :  lunghezza delle serie in input
-    //series:   puntatore al primo elemento dell'array delle serie, deve essere 2*len_in*N
-    //      dove N e' il numero di threads inizializzati
-    //      (tutte le serie sono concatenate, ogni thread lavora sulla coppia corrispondente al proprio idx)
-    //
-    //matrix:   puntatore al blocco di memoria allocato dalla CPU utilizzato per i calcoli per la DTW,
-    //      deve essere 4*len_in*N.
-    //      (tutto lo spazio in un'unica array concatenata, ogni thread lavora sull'area di memoria
-    //      corrispondente al proprio idx)
-    //
-    //res:      puntatore all'area in cui vengono scritti i risultati delle DTW, deve essere lungo N.
-    //
-    //deriv:    flag che indica se effettuare la derivata sulle serie in imput, 0 per falso, vero altrimenti.
-    //
-
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int len = (int)len_in[0];
-    float *s1 = series+(len*idx*2);
-    float *s2 = series+((len*idx*2)+len);
-    float *d_values_l = matrix+(len*idx*4);
-    float *d_values_u = matrix+((len*idx*4)+len);
-    float *p_values_l = matrix+((len*idx*4)+2*len);
-    float *p_values_u = matrix+((len*idx*4)+3*len);
-    float *ex;
-    int i,j;
-    if((int)deriv[0]){ deriv_calc(s1, len); deriv_calc(s2, len);}
-
-    //inizializzo il primo elemento
-
-    for (j = 0; j < len; j++)
-        d_values_l[j] = ((0-j)*(0-j)) + ((s1[0] - s2[j])*(s1[0] - s2[j]));
-    p_values_l[0] = d_values_l[0];
-    for (j = 0; j < len-1; j++)
-        p_values_l[j+1] = p_values_l[j] + d_values_l[j+1];
-
-    for (i = 0; i < len-1; i++)
-    {
-        for (j = 0; j < len; j++)
-            d_values_u[j] = (((i+1)-j)*((i+1)-j)) + ((s1[i+1] - s2[j])*(s1[i+1] - s2[j]));
-
-        p_values_u[0] = FLT_MAX;
-
-        for (j = 0; j < len-1; j++)
-        {
-            p_values_u[j+1] = d_values_u[j+1] + p_values_l[j];
-            if (p_values_l[j] + d_values_l[j+1] < p_values_l[j+1]) p_values_l[j+1] = p_values_l[j] + d_values_l[j+1];
-            if (p_values_l[j] + d_values_u[j] < p_values_u[j]) p_values_u[j] = p_values_l[j] + d_values_u[j];
-        }
-
-        if (p_values_l[j] + d_values_u[j] < p_values_u[j]) p_values_u[j] = p_values_l[j] + d_values_u[j];
-        ex = d_values_u;
-        d_values_u = d_values_l;
-        d_values_l = ex;
-        ex = p_values_u;
-        p_values_u = p_values_l;
-        p_values_l = ex;
-    }
-
-    for (j = 0; j < len-1; j++)
-    {
-        if (p_values_l[j] + d_values_l[j+1] < p_values_l[j+1]) p_values_l[j+1] = p_values_l[j] + d_values_l[j+1];
-    }
-
-    res[idx] = p_values_l[j];
-}
-
-__global__ void EUCLIDEAN(float* len_in, float* series, float* res, float* deriv)
-{
-    //WARNING: il kernel deve essere inizializzati in block mono-dimensionali.
-    //eg: DTW <<< M, K>>>(float* len_in, float* series, float* matrix, float* res, float* deriv)
-    //dove: M e' uno scalare, indica il numero di blocks (multicore) su cui viene eseguito il kernel
-    //dove: K e' uno scalare, indica il numero di threads eseguiti per ogni block.
-
-    //DESCRIZIONE INPUT
-    //len_in :  lunghezza delle serie in input
-    //series:   puntatore al primo elemento dell'array delle serie, deve essere 2*len_in*N
-    //      dove N e' il numero di threads inizializzati
-    //      (tutte le serie sono concatenate, ogni thread lavora sulla coppia corrispondente al proprio idx)
-    //
-    //res:      puntatore all'area in cui vengono scritti i risultati delle DTW, deve essere lungo N.
-    //
-    //deriv:    flag che indica se effettuare la derivata sulle serie in imput, 0 per falso, vero altrimenti.
-    //
-
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int len = (int)len_in[0];
-    float *s1 = series+(len*idx*2);
-    float *s2 = series+((len*idx*2)+len);
-    float sum = 0;
-    int j;
-    if((int)deriv[0]){ deriv_calc(s1, len); deriv_calc(s2, len);}
-
-    for (j = 0; j < len; j++)
-        sum += (s1[j] - s2[j])*(s1[j] - s2[j]);
-    res[idx] = sum;
-}
-
-
-
-
-
-///////QUESTA CALCOLA ANCHE IL PATH (NON PER CUDA)
-__global__ void DTW_PATH(float* len_in, float* series, float* matrix, float* res, float* deriv,float* path)
-{
-    //i kernel devono essere inizializzati in block mono-dimensionali.
-    //eg: DTW <<< M, N>>>(lung_serie_d, serie_d, b_d, res_d, deriv_d, path_d);
-    //dove: M e' uno scalare, indica il numero di blocks (multicore) su cui viene eseguito il kernel
-    //dove: N e' uno scalare, indica il numero di threads eseguiti per ogni block.
-    int len = (int)len_in[0];
-    int s_size = len;
-    int m_size = len*len;
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    float *s1 = series+(s_size*idx*2);
-    float *s2 = series+((s_size*idx*2)+s_size);
-    float *d_matrix = matrix+(m_size*idx*2);
-    float *d_values = matrix+((m_size*idx*2)+m_size);
-
-    int i,j,n;
-    if((int)deriv[0]){ deriv_calc(s1, len); deriv_calc(s2, len);}
-
-    //riempio la matrice con le distanze e inizializzo quella per lo short path
-    for(i = 0; i < len; i+=1)
-    {
-        for(j = 0; j < len; j += 1)
-        {
-            *(d_matrix+(i*len + j)) = sqrt(((i-j)*(i-j)) + ((s1[i] - s2[j])*(s1[i] - s2[j])));
-            *(d_values+(i*len + j)) = FLT_MAX;
-        }
-    }
-
-    //inizializzo il primo elemento
-    *d_values = *d_matrix;
-
-    // riempio la matrice per lo short path eccetto l'ultima riga e l'ultima colonna
-    for(i = 0; i < len-1; i+=1)
-    {
-        for(j = 0; j < len-1; j += 1)
-        {
-            *(d_values+((i+1)*len + j+1)) = *(d_values+(i*len + j)) + *(d_matrix+((i+1)*len + j + 1));
-            if(*(d_values+(i*len + j)) + *(d_matrix+(i*len + j+1)) < *(d_values+(i*len + j+1)))
-                *(d_values+(i*len + j+1)) = *(d_values+(i*len + j)) + *(d_matrix+(i*len + j+1));
-            if(*(d_values+(i*len + j)) + *(d_matrix+((i+1)*len + j)) < *(d_values+((i+1)*len + j)))
-                *(d_values+((i+1)*len + j)) = *(d_values+(i*len + j)) + *(d_matrix+((i+1)*len + j));
-        }
-    }
-    //riempio l'ultima riga e l'ultima colonna (senza l'ultima cella)
-    i = len-1;
-    for (j = 0; j < len-1; j +=1)
-    {
-        if(*(d_values+(i*len + j)) + *(d_matrix+(i*len + j+1)) < *(d_values+(i*len + j+1)))
-            *(d_values+(i*len + j+1)) = *(d_values+(i*len + j)) + *(d_matrix+(i*len + j+1));
-    }
-    j = len-1;
-    for (i = 0; i < len-1; i +=1)
-    {
-        if(*(d_values+(i*len + j)) + *(d_matrix+((i+1)*len + j)) < *(d_values+((i+1)*len + j)))
-            *(d_values+((i+1)*len + j)) = *(d_values+(i*len + j)) + *(d_matrix+((i+1)*len + j));
-    }
-    // i e j sono len-1, metto a posto l'ultima cella
-    if (*(d_values+((i-1)*len + j)) + *(d_matrix+(i*len + j)) < *(d_values+(i*len + j)))
-        *(d_values+(i*len + j)) = *(d_values+((i-1)*len + j)) + *(d_matrix+(i*len + j));
-    if (*(d_values+((i-1)*len + j-1)) + *(d_matrix+(i*len + j)) < *(d_values+(i*len + j)))
-        *(d_values+(i*len + j)) = *(d_values+((i-1)*len + j-1)) + *(d_matrix+(i*len + j));
-    if (*(d_values+((i)*len + j-1)) + *(d_matrix+(i*len + j)) < *(d_values+(i*len + j)))
-        *(d_values+(i*len + j)) = *(d_values+(i*len + j-1)) + *(d_matrix+(i*len + j));
-
-    res[idx] = *(d_values+(i*len + j));
-
-    i = len-1;
-    j = len-1;
-    n = 0;
-    while(1)
-    {
-        path[n] = i;
-        path[n+1] = j;
-        n += 2;
-        if ((j == 0) && (i == 0)) break;
-        if (i == 0) {j -= 1; continue;}
-        if (j == 0) {i -= 1; continue;}
-        if (d_values[(i-1)*len+j] < d_values[(i-1)*len+j-1] && d_values[(i-1)*len+j] < d_values[i*len+j-1]) {i -= 1; continue;}
-        if (d_values[(i-1)*len+j-1] < d_values[i*len+j-1] && d_values[(i-1)*len+j-1] < d_values[(i-1)*len+j]) {j -= 1; i -= 1; continue;}
-        j -= 1;
-    }
-    path[n] = -4;
-    path[n+1] = -4;
-}
-
-
 """);
