@@ -15,7 +15,7 @@ class kNN:
         self.distance_type = distance_type
         self.fast = fast
         self.radius = radius
-        self.pu=pu
+        self.pu = pu
 
         if len(self.training_set) != len(self.label_list):
             raise ValueError
@@ -28,74 +28,72 @@ class kNN:
     		raise ValueError
 
         for i in range(len(self.test_set)):
-            self.tmp_set = []
-            self.calc_list = []
+            tmp_set = []
+            calc_list = []
             self.dist_list = []
-            self.tmp_set.extend(self.training_set)
-            self.tmp_set.append(self.test_set[i])
-            for j in range(len(self.tmp_set) - 1):
-                self.calc_list.append((len(self.tmp_set) - 1, j))
-            self.dist_list_tmp = cd.Dist(self.tmp_set,
+            tmp_set.extend(self.training_set)
+            tmp_set.append(self.test_set[i])
+            for j in range(len(tmp_set) - 1):
+                calc_list.append((len(tmp_set) - 1, j))
+            self.dist_list_tmp = cd.Dist(tmp_set,
                                          self.distance_type,
                                          self.fast,
                                          self.radius,
-                                         self.pu).compute(self.calc_list)
+                                         self.pu).compute(calc_list)
             for j in range(len(self.dist_list_tmp)):
             #from numpy array to list
-                self.dist_list.append(self.dist_list_tmp[j])
+                self.dist_list.append((self.dist_list_tmp[j],j))
             self.test_set_labels.append(self.run())
 
         return self.test_set_labels
 
     def run(self):
-        self.nn = []
-        self.label_dict = {}
-        self.keys = []
-        self.ts_label = 0
+        nn = []
+        label_dict = {}
+        keys = []
+        ts_label = 0
+        self.dist_list.sort()
 
         if self.weight == True:
             for i in range(self.k):
-                self.nn.append((self.label_list[self.dist_list.index(min(self.dist_list))], \
-                min(self.dist_list)))
-                self.dist_list[self.dist_list.index(min(self.dist_list))] = np.inf
+                nn.append((self.label_list[self.dist_list[i][1]], self.dist_list[i][0]))
 
             for i in range(self.k):
-                if self.label_dict.__contains__(self.nn[i][0]) == False:
-                    self.label_dict[self.nn[i][0]] = [1,self.nn[i][1],1/self.nn[i][1]]
-                    self.keys.append(self.nn[i][0])
+                if label_dict.__contains__(nn[i][0]) == False:
+                    label_dict[nn[i][0]] = [1,nn[i][1],1/nn[i][1]]
+                    keys.append(nn[i][0])
                 else:
-                    self.label_dict[self.nn[i][0]][0] = self.label_dict[self.nn[i][0]][0]+1
-                    self.label_dict[self.nn[i][0]][1] = self.label_dict[self.nn[i][0]][1]+self.nn[i][1]
-                    self.label_dict[self.nn[i][0]][2] = self.label_dict[self.nn[i][0]][0] / \
-                    self.label_dict[self.nn[i][0]][1]
-            for i in range(len(self.keys)):
-                if self.ts_label == 0 or self.label_dict[self.keys[i]][2] > self.label_dict[self.ts_label][2]:
-                    self.ts_label = self.keys[i]
+                    label_dict[nn[i][0]][0] = label_dict[nn[i][0]][0] + 1
+                    label_dict[nn[i][0]][1] = label_dict[nn[i][0]][1] + nn[i][1]
+                    label_dict[nn[i][0]][2] = label_dict[nn[i][0]][0] / \
+                    label_dict[nn[i][0]][1]
+            for i in range(len(keys)):
+                if ts_label == 0 or label_dict[keys[i]][2] > label_dict[ts_label][2]:
+                    ts_label = keys[i]
                 else:
                     pass
 
         else:
             for i in range(self.k):
-                self.nn.append(self.label_list[self.dist_list.index(min(self.dist_list))])
-                self.dist_list[self.dist_list.index(min(self.dist_list))] = np.inf
+                nn.append(self.label_list[self.dist_list[i][1]])
             for i in range(self.k):
-                if self.label_dict.__contains__(self.nn[i][0]) == False:
-                    self.label_dict[self.nn[i][0]] = 1
-                    self.keys.append(self.nn[i][0])
+                if label_dict.__contains__(nn[i][0]) == False:
+                    label_dict[nn[i][0]] = 1
+                    keys.append(nn[i][0])
                 else:
-                    self.label_dict[self.nn[i][0]] = self.label_dict[self.nn[i][0]]+1
-            for i in range(len(self.keys)):
-                if self.ts_label == 0 or self.label_dict[self.keys[i]] > self.label_dict[self.ts_label]:
-                    self.ts_label = self.keys[i]
+                    label_dict[nn[i][0]] = label_dict[nn[i][0]]+1
+            for i in range(len(keys)):
+                if ts_label == 0 or label_dict[keys[i]] > label_dict[ts_label]:
+                    ts_label = keys[i]
 
 
-        return self.ts_label
+        return ts_label
 
 
 if __name__ == '__main__':
     test_set = [[1,2,3,4,5],[5,4,3,2,1],[2,2,3,4,5],[5,4,4,2,1]]
     training_set = [[1,2,3,4,5],[5,4,3,2,1],[5,4,4,2,1],[2,2,3,4,5]]
-    label_list = ['a','b','b','a']
+    label_list = ['1','2','2','1']
     distance_type = 'dtw'
     fast = False
     radius = 20
