@@ -27,7 +27,10 @@ class GpuDistance(object):
         print "Max gird z: ", self.driver.Device(device).max_grid_dim_z
 
     def launch(self, dtwlist_in):
-        function = self.source.get_function('calc_dtw')
+        if self.method == "dtw" or self.method == "ddtw":
+            function = self.source.get_function('calc_dtw')
+        elif self.method == "euclidean":
+            function = self.source.get_function('euclidean')
         
         dtwlist = self.numpy.array(dtwlist_in)
         dtwlist = dtwlist.astype(self.numpy.float32)
@@ -41,20 +44,85 @@ class GpuDistance(object):
             threadsPerBlock = self.len
         else:
             threadsPerBlock = 512
+   
+        result_total = self.numpy.empty(0)
+        cont = 65535
+        while cont < dtwnum:     
+           function(self.matrix_gpu, self.driver.In(dtwlist),self.driver.In(param), self.driver.Out(results), block = (threadsPerBlock,1,1), grid = (65535,1) )
+           self.numpy.concatenate((result_total, results))
+           cont += 65535
+        function(self.matrix_gpu, self.driver.In(dtwlist),self.driver.In(param), self.driver.Out(results), block = (threadsPerBlock,1,1), grid = (dtwnum%cont,1) )
+
+        result_total = self.numpy.concatenate((result_total, results))
+        return result_total
+
+    def calc_deriv(self):
+        function = self.source.get_function('calc_deriv')
+        num = self.numpy.array(self.matrix.__len__())
+        num = num.astype(self.numpy.float32)
+        lenght = self.numpy.array(self.len)
+        lenght = lenght.astype(self.numpy.float32)
+
+        if self.len < 512:
+            threadsPerBlock = self.len
+        else:
+            threadsPerBlock = 512
         
-        function(self.matrix_gpu, self.driver.In(dtwlist),self.driver.In(param), self.driver.Out(results), block = (threadsPerBlock,1,1), grid = (dtwnum,1) )
-
-        print results
-
-    def __init__(self, matrix, mode = "DTW" , deriv = True):
+        cont = 65535
+        while cont < num:
+            function(self.matrix_gpu, self.driver.In(num) , self.driver.In(lenght), block = (threadsPerBlock,1,1), grid = (65535,1))
+            cont += 65535            
+        function(self.matrix_gpu, self.driver.In(num) , self.driver.In(lenght), block = (threadsPerBlock,1,1), grid = (self.matrix.__len__()%cont,1))
+        
+    def __init__(self, matrix, mode = "dtw" , deriv = True):
         self.matrix = self.numpy.array(matrix)
         self.matrix = self.matrix.astype(self.numpy.float32)
-        self.matrix_gpu = driver.mem_alloc(matrix.nbytes)
-        driver.memcpy_htod(matrix_gpu, matrix)
+        self.matrix_gpu = self.driver.mem_alloc(self.matrix.nbytes)
+        self.driver.memcpy_htod(self.matrix_gpu, self.matrix)
         self.len = self.matrix[0].__len__()
         self.method = mode
         self.source = self.compiler.SourceModule("""
 #define MAX_THREADS_PER_BLOCK 512
+
+__global__ void euclidean(float* series, float* ope, float* param, float *results)
+{
+    int len = param[0];
+    int i,j;
+    float* s1 = series+len*((int)ope[blockIdx.x*2]);
+    float* s2 = series+len*((int)ope[blockIdx.x*2+1]);
+    __shared__ float sum[MAX_THREADS_PER_BLOCK];  
+
+    if (threadIdx.x == 0) results[blockIdx.x] = 0;
+    __syncthreads();
+
+    for(i = threadIdx.x; i < len; i += MAX_THREADS_PER_BLOCK)
+    {
+        sum[i] = (s1[i] - s2[i])*(s1[i] - s2[i]);
+        __syncthreads();
+        if (threadIdx.x == 0)
+        {
+             for(j = 0; (i+MAX_THREADS_PER_BLOCK < len ? j < MAX_THREADS_PER_BLOCK : j < len%MAX_THREADS_PER_BLOCK); j++)
+                results[blockIdx.x] += sum[j];
+        }
+    }
+}
+
+__global__ void calc_deriv(float* series, float *num, float* len)
+{
+    float* s = series + (int)(len[0]*blockIdx.x);
+    int i;
+    float val1, val2;
+    
+    for(i = threadIdx.x; i < (int)len[0]-1; i += MAX_THREADS_PER_BLOCK)
+    {
+        val1 = s[i];
+        val2 = s[i+1];
+        __syncthreads(); //first all threads have to read the values, and then they can proceed and write the results.
+        s[i] = val1 - val2;
+    }
+    if (i == (int)len[0]-1) //only one thread
+        s[i] = s[i-1];
+}
 
 __global__ void calc_dtw(float* series, float* dtws, float* param, float *results)
 {
@@ -128,3 +196,5 @@ __global__ void calc_dtw(float* series, float* dtws, float* param, float *result
     }
 }
 """);
+        if deriv:
+            self.calc_deriv()
