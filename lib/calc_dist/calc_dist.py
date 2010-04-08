@@ -38,15 +38,15 @@ class Dist:
         self.fast = fast
         self.radius = radius
         self.derivative = False
-        self.euclidean = False        
+        self.euclidean = False
         if self.mode == "ddtw":
             self.derivative = True
         elif self.mode == "euclidean":
             self.euclidean = True
-            
+
         if self.pu == "GPU":
             try:
-                from gpu_distance import GpuDistance
+                from dtw_gpu import GpuDistance
             except ImportError:
                 print "No suitable hardware! Doing DTW on CPU..."
                 self.pu = "CPU"
