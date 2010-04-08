@@ -76,7 +76,7 @@ class Dist:
                 are in the order of input.
         '''
         if self.pu == "GPU":
-            res = self.GpuDistance.launch(li)
+            res = self.gpu.launch(li)
         elif self.pu == "CPU":
             res = numpy.array([])
             for qui in li:
