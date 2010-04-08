@@ -44,21 +44,26 @@ class GpuDistance(object):
             threadsPerBlock = self.len
         else:
             threadsPerBlock = 512
-   
+
+
         result_total = self.numpy.empty(0)
-        cont = 65535
-        while cont < dtwnum:     
-           function(self.matrix_gpu, self.driver.In(dtwlist),self.driver.In(param), self.driver.Out(results), block = (threadsPerBlock,1,1), grid = (65535,1) )
+        cont = 0
+        while dtwnum > (cont+65535):     
+           function(self.matrix_gpu, self.driver.In(dtwlist[cont:cont+65535]),self.driver.In(param), self.driver.Out(results), block = (threadsPerBlock,1,1), grid = (65535,1) )
            self.numpy.concatenate((result_total, results))
            cont += 65535
-        function(self.matrix_gpu, self.driver.In(dtwlist),self.driver.In(param), self.driver.Out(results), block = (threadsPerBlock,1,1), grid = (dtwnum%cont,1) )
+        if cont != 0:
+            dtwnum = dtwnum%cont
+        function(self.matrix_gpu, self.driver.In(dtwlist[cont:]),self.driver.In(param), self.driver.Out(results), block = (threadsPerBlock,1,1), grid = (dtwnum,1) )
 
         result_total = self.numpy.concatenate((result_total, results))
         return result_total
 
+
     def calc_deriv(self):
         function = self.source.get_function('calc_deriv')
-        num = self.numpy.array(self.matrix.__len__())
+        openum = self.matrix.__len__()
+        num = self.numpy.array(0)
         num = num.astype(self.numpy.float32)
         lenght = self.numpy.array(self.len)
         lenght = lenght.astype(self.numpy.float32)
@@ -68,13 +73,16 @@ class GpuDistance(object):
         else:
             threadsPerBlock = 512
         
-        cont = 65535
-        while cont < num:
+        cont = 0
+        while openum > (cont+65535):  
             function(self.matrix_gpu, self.driver.In(num) , self.driver.In(lenght), block = (threadsPerBlock,1,1), grid = (65535,1))
-            cont += 65535            
-        function(self.matrix_gpu, self.driver.In(num) , self.driver.In(lenght), block = (threadsPerBlock,1,1), grid = (self.matrix.__len__()%cont,1))
+            cont += 65535
+            num += 65535
+        if cont != 0:
+            openum = openum%cont       
+        function(self.matrix_gpu, self.driver.In(num) , self.driver.In(lenght), block = (threadsPerBlock,1,1), grid = (openum,1))
         
-    def __init__(self, matrix, mode = "dtw" , deriv = True):
+    def __init__(self, matrix, mode = "dtw" , deriv = False):
         self.matrix = self.numpy.array(matrix)
         self.matrix = self.matrix.astype(self.numpy.float32)
         self.matrix_gpu = self.driver.mem_alloc(self.matrix.nbytes)
@@ -109,7 +117,7 @@ __global__ void euclidean(float* series, float* ope, float* param, float *result
 
 __global__ void calc_deriv(float* series, float *num, float* len)
 {
-    float* s = series + (int)(len[0]*blockIdx.x);
+    float* s = series + (int)(len[0]*(blockIdx.x+(int)num[0]));
     int i;
     float val1, val2;
     
